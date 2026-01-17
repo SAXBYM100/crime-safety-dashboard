@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="160" height="160" viewBox="0 0 160 160" role="img" aria-label="Map pin">
+  <defs>
+    <linearGradient id="g" x1="0" x2="1">
+      <stop offset="0" stop-color="#1a237e"/>
+      <stop offset="1" stop-color="#3949ab"/>
+    </linearGradient>
+  </defs>
+  <rect x="0" y="0" width="160" height="160" rx="28" fill="url(#g)" opacity="0.12"/>
+  <path d="M80 24c-22.1 0-40 17.9-40 40 0 31.2 33.3 62 38.7 66.7a2.3 2.3 0 0 0 2.6 0C86.7 126 120 95.2 120 64c0-22.1-17.9-40-40-40zm0 58a18 18 0 1 1 0-36 18 18 0 0 1 0 36z"
+        fill="url(#g)"/>
+  <circle cx="80" cy="64" r="10.5" fill="#fff" opacity="0.92"/>
+  <path d="M30 132c16 9 33 14 50 14s34-5 50-14" fill="none" stroke="#1a237e" stroke-width="6" stroke-linecap="round" opacity="0.35"/>
+</svg>

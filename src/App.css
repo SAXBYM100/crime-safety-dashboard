@@ -1,0 +1,133 @@
+/* Crime & Safety Dashboard styles */
+
+.App {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 1.5rem;
+}
+
+.hero {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background: #ffffff;
+  border: 1px solid #e6e6e6;
+  border-radius: 10px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+.heroImg {
+  width: 84px;
+  height: 84px;
+  flex: 0 0 auto;
+}
+
+h1 {
+  margin: 0;
+  color: #1a237e;
+  line-height: 1.1;
+}
+
+.sub {
+  margin: 0.35rem 0 0 0;
+  opacity: 0.85;
+}
+
+.form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0.75rem 0 0.25rem 0;
+}
+
+.form input {
+  padding: 0.6rem 0.7rem;
+  border: 1px solid #cfcfcf;
+  border-radius: 6px;
+  flex: 1 1 260px;
+  min-width: 240px;
+}
+
+.form button {
+  padding: 0.6rem 1rem;
+  background: #1a237e;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  flex: 0 0 auto;
+}
+
+.form button:disabled {
+  background: #9aa2d6;
+  cursor: not-allowed;
+}
+
+.hint {
+  margin: 0.4rem 0;
+  font-size: 0.95rem;
+  opacity: 0.86;
+}
+
+.error {
+  background: #ffe5e5;
+  border: 1px solid #ffb3b3;
+  padding: 0.75rem;
+  border-radius: 8px;
+  margin-top: 0.75rem;
+}
+
+.tableWrap {
+  margin-top: 1rem;
+  overflow-x: auto;
+  background: #fff;
+  border: 1px solid #e6e6e6;
+  border-radius: 10px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 720px;
+}
+
+th, td {
+  padding: 0.75rem;
+  border-bottom: 1px solid #eee;
+  text-align: left;
+  vertical-align: top;
+}
+
+th {
+  background: #fafafa;
+  color: #333;
+  font-weight: 600;
+}
+
+.note {
+  margin-top: 1rem;
+  font-size: 0.9rem;
+  opacity: 0.8;
+}
+
+.footerLinks a {
+  color: #1a237e;
+}
+
+@media (max-width: 600px) {
+  .App {
+    padding: 1rem;
+  }
+  .hero {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .form input, .form button {
+    width: 100%;
+    min-width: 0;
+  }
+  table {
+    min-width: 620px;
+  }
+}
