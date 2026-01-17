@@ -1,6 +1,5 @@
 // Last-12-months monthly category counts, cached in localStorage.
-// Uses UK Police API directly (works with no server).
-// Endpoint: /crimes-street/all-crime?lat=...&lng=...&date=YYYY-MM
+// Robust against Police API quirks and browser "Failed to fetch" issues.
 
 const LS_PREFIX = "crime_trend_v1:";
 
@@ -13,13 +12,12 @@ function ym(d) {
 function last12Months() {
   const out = [];
   const now = new Date();
-  // go from current month back 11 months (inclusive)
   const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
   for (let i = 0; i < 12; i++) {
     out.push(ym(d));
     d.setUTCMonth(d.getUTCMonth() - 1);
   }
-  return out.reverse(); // oldest -> newest
+  return out.reverse();
 }
 
 function cacheKey(lat, lng) {
@@ -33,7 +31,6 @@ function readCache(key) {
     const raw = localStorage.getItem(key);
     if (!raw) return null;
     const parsed = JSON.parse(raw);
-    // cache valid for 12 hours
     if (!parsed?.ts || Date.now() - parsed.ts > 12 * 60 * 60 * 1000) return null;
     return parsed.data || null;
   } catch {
@@ -44,9 +41,11 @@ function readCache(key) {
 function writeCache(key, data) {
   try {
     localStorage.setItem(key, JSON.stringify({ ts: Date.now(), data }));
-  } catch {
-    // ignore quota issues
-  }
+  } catch {}
+}
+
+function sleep(ms) {
+  return new Promise((r) => setTimeout(r, ms));
 }
 
 async function fetchMonth(lat, lng, yyyymm) {
@@ -54,9 +53,25 @@ async function fetchMonth(lat, lng, yyyymm) {
     lat
   )}&lng=${encodeURIComponent(lng)}&date=${encodeURIComponent(yyyymm)}`;
 
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`Police API ${res.status}`);
-  return res.json();
+  try {
+    const res = await fetch(url, { headers: { Accept: "application/json" } });
+
+    // Police API quirk: 404 often means "no data for that month/location"
+    if (res.status === 404) return [];
+
+    if (!res.ok) {
+      // If rate-limited, treat as empty month rather than breaking the chart
+      if (res.status === 429 || res.status === 503) return [];
+      throw new Error(`Police API ${res.status}`);
+    }
+
+    const json = await res.json().catch(() => []);
+    return Array.isArray(json) ? json : [];
+  } catch (e) {
+    // Browser "Failed to fetch" / CORS / transient network errors:
+    // Don't kill the whole trend—treat this month as empty.
+    return [];
+  }
 }
 
 export async function fetchLast12MonthsCountsByCategory(lat, lng) {
@@ -67,17 +82,21 @@ export async function fetchLast12MonthsCountsByCategory(lat, lng) {
   if (cached?.months?.length === 12) return cached;
 
   const series = [];
+
+  // Sequential + tiny delay to reduce blocked/dropped requests
   for (const m of months) {
     const crimes = await fetchMonth(lat, lng, m);
+
     const counts = {};
     for (const c of crimes) {
       const cat = c.category || "unknown";
       counts[cat] = (counts[cat] || 0) + 1;
     }
     series.push({ month: m, counts });
+
+    await sleep(120); // small spacing to be kind to the API/browser
   }
 
-  // stable category list
   const categorySet = new Set();
   for (const row of series) Object.keys(row.counts).forEach((k) => categorySet.add(k));
   const categories = Array.from(categorySet).sort();

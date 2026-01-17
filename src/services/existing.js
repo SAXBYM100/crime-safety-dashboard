@@ -1,5 +1,3 @@
-// Thin wrappers around your existing logic.
-// These mirror the functions that were previously in your single-page App.
 
 function isLikelyLatLngPair(text) {
   return /^\s*.+\s*,\s*.+\s*$/.test(text);
@@ -130,12 +128,26 @@ export async function geocodePlaceName(placeName) {
   return { lat, lng, source: "place" };
 }
 
+// ✅ Updated: Police API 404 often means “no data”, so return []
 export async function fetchCrimesForLocation(lat, lng, dateYYYYMM = "") {
   const url = new URL("https://data.police.uk/api/crimes-street/all-crime");
   url.searchParams.set("lat", String(lat));
   url.searchParams.set("lng", String(lng));
   if (dateYYYYMM) url.searchParams.set("date", dateYYYYMM);
-  return fetchJsonOrThrow(url.toString());
+
+  const res = await fetch(url.toString(), { headers: { Accept: "application/json" } });
+
+  if (res.status === 404) return [];
+
+  if (!res.ok) {
+    const body = await res.text().catch(() => "");
+    let msg = `Police API ${res.status}`;
+    if (body) msg += `: ${body.slice(0, 160)}`;
+    throw new Error(msg);
+  }
+
+  const json = await res.json().catch(() => []);
+  return Array.isArray(json) ? json : [];
 }
 
 export function classifyQueryType(input) {

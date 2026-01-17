@@ -4,11 +4,15 @@ import { normalizePlaceParam } from "../utils/slug";
 import { setMeta } from "../seo";
 import TrendChart from "../components/TrendChart";
 import { fetchLast12MonthsCountsByCategory } from "../api/trends";
-import { geocodePlaceName, fetchCrimesForLocation } from "../services/existing";
+import { geocodeLocation, fetchCrimesForLocation } from "../services/existing";
 
 export default function PlacePage() {
   const params = useParams();
-  const placeName = useMemo(() => normalizePlaceParam(params.placeName), [params.placeName]);
+  const placeName = useMemo(() => {
+  const raw = decodeURIComponent(params.placeName || "");
+  return raw.replace(/-/g, " ").trim(); // handles old slug style too
+}, [params.placeName]);
+
 
   const [status, setStatus] = useState("idle");
   const [error, setError] = useState("");
@@ -31,11 +35,11 @@ export default function PlacePage() {
       setError("");
 
       try {
-        const geo = await geocodePlaceName(placeName);
+        const geo = await geocodeLocation(placeName);
         if (!mounted) return;
         setResolved({ lat: geo.lat, lng: geo.lng });
 
-        const crimes = await fetchCrimesForLocation(geo.lat, geo.lng, "");
+        const crimes = await fetchCrimesForLocation(geo.lat, geo.lng);
         if (!mounted) return;
         setLatestCrimes(Array.isArray(crimes) ? crimes : []);
 

@@ -1,5 +1,5 @@
 import React from "react";
-import { Routes, Route, Link } from "react-router-dom";
+import { Routes, Route, Link, Navigate } from "react-router-dom";
 import "./App.css";
 
 import HomeRoute from "./pages/HomeRoute";
@@ -17,6 +17,7 @@ export default function App() {
           <Link to="/" style={{ fontWeight: 800, textDecoration: "none" }}>
             Crime & Safety
           </Link>
+
           <nav style={{ display: "flex", gap: 12, opacity: 0.85 }}>
             <Link to="/privacy">Privacy</Link>
             <Link to="/terms">Terms</Link>
@@ -32,6 +33,9 @@ export default function App() {
         <Route path="/privacy" element={<Privacy />} />
         <Route path="/terms" element={<Terms />} />
         <Route path="/cookies" element={<Cookies />} />
+
+        {/* Catch-all: prevents dead/blank pages if a URL doesn't match */}
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </>
   );

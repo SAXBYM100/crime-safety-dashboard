@@ -18,7 +18,7 @@ export default function HomeRoute() {
   const lastGeoMs = useRef(0);
 
   const canPreview = useMemo(() => Boolean((location || "").trim()), [location]);
-  const kind = classifyQueryType(location).kind;
+  const kind = useMemo(() => classifyQueryType((location || "").trim()).kind, [location]);
 
   useEffect(() => {
     setMeta(
@@ -59,25 +59,26 @@ export default function HomeRoute() {
     }
   }
 
-  function openDedicatedPage() {
-    const raw = (location || "").trim();
-    if (!raw) return;
+function openDedicatedPage() {
+  setError("");
+  const raw = (location || "").trim();
+  if (!raw) return;
 
-    if (kind === "postcode") {
-      const pc = raw.toUpperCase().replace(/\s+/g, "-");
-      navigate(`/postcode/${encodeURIComponent(pc)}`);
-      return;
-    }
+  const k = classifyQueryType(raw).kind; // recompute from trimmed input
 
-    if (kind === "place") {
-      const place = raw.trim().replace(/\s+/g, "-");
-      navigate(`/place/${encodeURIComponent(place)}`);
-      return;
-    }
-
-    // lat,lng is supported on the homepage for lookup, but dedicated pages are postcode/place only.
-    setError("Dedicated pages currently support postcodes and place names (not lat,lng). Use a postcode or place name.");
+  if (k === "postcode") {
+    navigate(`/postcode/${encodeURIComponent(raw.toUpperCase())}`);
+    return;
   }
+
+  if (k === "place") {
+    navigate(`/place/${encodeURIComponent(raw)}`);
+    return;
+  }
+
+  setError("Dedicated pages currently support postcodes and place names (not lat,lng). Use a postcode or place name.");
+}
+
 
   return (
     <div className="App">
@@ -107,9 +108,10 @@ export default function HomeRoute() {
         <button onClick={fetchCrimes} disabled={loading}>
           {loading ? "Loading..." : "Fetch crimes"}
         </button>
-        <button onClick={openDedicatedPage} disabled={loading || !canPreview}>
-          Open page
-        </button>
+       <button onClick={openDedicatedPage} disabled={loading || !canPreview}>
+  See full report
+</button>
+
       </div>
 
       {canPreview && (
