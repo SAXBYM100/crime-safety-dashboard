@@ -1,0 +1,163 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+
+	<!-- Homepage -->
+	<url>
+		<loc>https://crime-safety-dashboard.vercel.app/</loc>
+		<priority>1.0</priority>
+	</url>
+
+	<!-- Major UK Cities -->
+	<url>
+		<loc>https://crime-safety-dashboard.vercel.app/place/london</loc>
+	</url>
+	<url>
+		<loc>https://crime-safety-dashboard.vercel.app/place/birmingham</loc>
+	</url>
+	<url>
+		<loc>https://crime-safety-dashboard.vercel.app/place/manchester</loc>
+	</url>
+	<url>
+		<loc>https://crime-safety-dashboard.vercel.app/place/leeds</loc>
+	</url>
+	<url>
+		<loc>https://crime-safety-dashboard.vercel.app/place/liverpool</loc>
+	</url>
+	<url>
+		<loc>https://crime-safety-dashboard.vercel.app/place/bristol</loc>
+	</url>
+	<url>
+		<loc>https://crime-safety-dashboard.vercel.app/place/sheffield</loc>
+	</url>
+	<url>
+		<loc>https://crime-safety-dashboard.vercel.app/place/newcastle</loc>
+	</url>
+	<url>
+		<loc>https://crime-safety-dashboard.vercel.app/place/nottingham</loc>
+	</url>
+	<url>
+		<loc>https://crime-safety-dashboard.vercel.app/place/leicester</loc>
+	</url>
+	<url>
+		<loc>https://crime-safety-dashboard.vercel.app/place/coventry</loc>
+	</url>
+	<url>
+		<loc>https://crime-safety-dashboard.vercel.app/place/sunderland</loc>
+	</url>
+	<url>
+		<loc>https://crime-safety-dashboard.vercel.app/place/wolverhampton</loc>
+	</url>
+
+	<!-- South West -->
+	<url>
+		<loc>https://crime-safety-dashboard.vercel.app/place/plymouth</loc>
+	</url>
+	<url>
+		<loc>https://crime-safety-dashboard.vercel.app/place/exeter</loc>
+	</url>
+	<url>
+		<loc>https://crime-safety-dashboard.vercel.app/place/torquay</loc>
+	</url>
+	<url>
+		<loc>https://crime-safety-dashboard.vercel.app/place/paignton</loc>
+	</url>
+	<url>
+		<loc>https://crime-safety-dashboard.vercel.app/place/saltash</loc>
+	</url>
+	<url>
+		<loc>https://crime-safety-dashboard.vercel.app/place/truro</loc>
+	</url>
+	<url>
+		<loc>https://crime-safety-dashboard.vercel.app/place/taunton</loc>
+	</url>
+	<url>
+		<loc>https://crime-safety-dashboard.vercel.app/place/barnstaple</loc>
+	</url>
+
+	<!-- South East -->
+	<url>
+		<loc>https://crime-safety-dashboard.vercel.app/place/brighton</loc>
+	</url>
+	<url>
+		<loc>https://crime-safety-dashboard.vercel.app/place/hove</loc>
+	</url>
+	<url>
+		<loc>https://crime-safety-dashboard.vercel.app/place/reading</loc>
+	</url>
+	<url>
+		<loc>https://crime-safety-dashboard.vercel.app/place/oxford</loc>
+	</url>
+	<url>
+		<loc>https://crime-safety-dashboard.vercel.app/place/cambridge</loc>
+	</url>
+	<url>
+		<loc>https://crime-safety-dashboard.vercel.app/place/milton-keynes</loc>
+	</url>
+	<url>
+		<loc>https://crime-safety-dashboard.vercel.app/place/luton</loc>
+	</url>
+	<url>
+		<loc>https://crime-safety-dashboard.vercel.app/place/slough</loc>
+	</url>
+
+	<!-- Midlands -->
+	<url>
+		<loc>https://crime-safety-dashboard.vercel.app/place/derby</loc>
+	</url>
+	<url>
+		<loc>https://crime-safety-dashboard.vercel.app/place/northampton</loc>
+	</url>
+	<url>
+		<loc>https://crime-safety-dashboard.vercel.app/place/rugby</loc>
+	</url>
+	<url>
+		<loc>https://crime-safety-dashboard.vercel.app/place/warwick</loc>
+	</url>
+
+	<!-- North -->
+	<url>
+		<loc>https://crime-safety-dashboard.vercel.app/place/york</loc>
+	</url>
+	<url>
+		<loc>https://crime-safety-dashboard.vercel.app/place/hull</loc>
+	</url>
+	<url>
+		<loc>https://crime-safety-dashboard.vercel.app/place/blackpool</loc>
+	</url>
+	<url>
+		<loc>https://crime-safety-dashboard.vercel.app/place/preston</loc>
+	</url>
+	<url>
+		<loc>https://crime-safety-dashboard.vercel.app/place/bolton</loc>
+	</url>
+	<url>
+		<loc>https://crime-safety-dashboard.vercel.app/place/rochdale</loc>
+	</url>
+
+	<!-- Wales -->
+	<url>
+		<loc>https://crime-safety-dashboard.vercel.app/place/cardiff</loc>
+	</url>
+	<url>
+		<loc>https://crime-safety-dashboard.vercel.app/place/swansea</loc>
+	</url>
+	<url>
+		<loc>https://crime-safety-dashboard.vercel.app/place/newport</loc>
+	</url>
+
+	<!-- Scotland -->
+	<url>
+		<loc>https://crime-safety-dashboard.vercel.app/place/edinburgh</loc>
+	</url>
+	<url>
+		<loc>https://crime-safety-dashboard.vercel.app/place/glasgow</loc>
+	</url>
+	<url>
+		<loc>https://crime-safety-dashboard.vercel.app/place/aberdeen</loc>
+	</url>
+	<url>
+		<loc>https://crime-safety-dashboard.vercel.app/place/dundee</loc>
+	</url>
+
+</urlset>
+
