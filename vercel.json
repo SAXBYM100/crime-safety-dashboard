@@ -1,7 +1,6 @@
-﻿{
-  "routes": [
-    { "src": "/ads.txt", "dest": "/ads.txt" },
-    { "handle": "filesystem" },
-    { "src": "/.*", "dest": "/index.html" }
+{
+  "rewrites": [
+    { "source": "/ads.txt", "destination": "/ads.txt" },
+    { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
