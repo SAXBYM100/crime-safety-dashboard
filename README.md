@@ -37,3 +37,8 @@ If the Police API returns an error (400/429/503), the app surfaces a friendly er
 - `src/App.js` – UI + API + geocoding logic
 - `src/App.css` – responsive layout + styling
 
+### Tech
+- React
+- React Router
+- Fetch-based APIs
+- No backend (client-only)
