@@ -1,40 +1,51 @@
 import React from "react";
-import { Routes, Route, Link, Navigate } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 import "./App.css";
 
+import SiteLayout from "./components/SiteLayout";
 import HomeRoute from "./pages/HomeRoute";
+import HomePage from "./pages/HomePage";
 import PostcodePage from "./pages/PostcodePage";
 import PlacePage from "./pages/PlacePage";
-import Privacy from "./pages/Privacy";
+import About from "./pages/About";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
 import Terms from "./pages/Terms";
-import Cookies from "./pages/Cookies";
+import Contact from "./pages/Contact";
+import GuidesIndex from "./pages/GuidesIndex";
+import GuideCrimeData from "./pages/guides/GuideCrimeData";
+import GuideSafeTravel from "./pages/guides/GuideSafeTravel";
+import GuideMovingHome from "./pages/guides/GuideMovingHome";
+import AreasIndex from "./pages/AreasIndex";
+import AreaPage from "./pages/areas/AreaPage";
 
 export default function App() {
   return (
     <>
-      <header style={{ padding: "12px 16px", borderBottom: "1px solid rgba(0,0,0,0.08)" }}>
-        <div style={{ maxWidth: 980, margin: "0 auto", display: "flex", gap: 14, alignItems: "center" }}>
-          <Link to="/" style={{ fontWeight: 800, textDecoration: "none" }}>
-            Crime & Safety
-          </Link>
-
-          <nav style={{ display: "flex", gap: 12, opacity: 0.85 }}>
-            <Link to="/privacy">Privacy</Link>
-            <Link to="/terms">Terms</Link>
-            <Link to="/cookies">Cookies</Link>
-          </nav>
-        </div>
-      </header>
-
       <Routes>
-        <Route path="/" element={<HomeRoute />} />
-        <Route path="/postcode/:postcode" element={<PostcodePage />} />
-        <Route path="/place/:placeName" element={<PlacePage />} />
-        <Route path="/privacy" element={<Privacy />} />
-        <Route path="/terms" element={<Terms />} />
-        <Route path="/cookies" element={<Cookies />} />
+        <Route element={<SiteLayout />}>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/app" element={<HomeRoute />} />
+          <Route path="/dashboard" element={<Navigate to="/app" replace />} />
+          <Route path="/postcode/:postcode" element={<PostcodePage />} />
+          <Route path="/place/:placeName" element={<PlacePage />} />
 
-        {/* Catch-all: prevents dead/blank pages if a URL doesn't match */}
+          <Route path="/guides" element={<GuidesIndex />} />
+          <Route path="/guides/how-uk-crime-data-works" element={<GuideCrimeData />} />
+          <Route path="/guides/staying-safe-at-night" element={<GuideSafeTravel />} />
+          <Route path="/guides/moving-to-a-new-area" element={<GuideMovingHome />} />
+
+          <Route path="/areas" element={<AreasIndex />} />
+          <Route path="/areas/:areaSlug" element={<AreaPage />} />
+
+          <Route path="/about" element={<About />} />
+          <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+          <Route path="/terms" element={<Terms />} />
+          <Route path="/contact" element={<Contact />} />
+
+          <Route path="/privacy" element={<Navigate to="/privacy-policy" replace />} />
+          <Route path="/cookies" element={<Navigate to="/privacy-policy" replace />} />
+        </Route>
+
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </>

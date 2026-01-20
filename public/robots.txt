@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://crime-safety-dashboard.vercel.app/sitemap.xml
