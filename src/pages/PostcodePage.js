@@ -63,7 +63,7 @@ export default function PostcodePage() {
       <div style={{ maxWidth: 980, margin: "0 auto", padding: "24px 16px" }}>
         <h1>Crime stats: {postcode}</h1>
 
-        {status === "loading" && <p>Loading…</p>}
+        {status === "loading" && <p>Loading...</p>}
         {status === "error" && <p style={{ color: "crimson" }}>{error}</p>}
 
         {status === "ready" && (
@@ -98,9 +98,9 @@ export default function PostcodePage() {
                       {latestCrimes.slice(0, 100).map((crime) => (
                         <tr key={crime.id}>
                           <td>{crime.category}</td>
-                          <td>{crime.location?.street?.name || "Unknown"}</td>
-                          <td>{crime.month || "Unknown"}</td>
-                          <td>{crime.outcome_status?.category || "None recorded"}</td>
+                          <td>{crime.location?.name || "Unknown"}</td>
+                          <td>{crime.date || "Unknown"}</td>
+                          <td>{crime.outcome || "None recorded"}</td>
                         </tr>
                       ))}
                     </tbody>
