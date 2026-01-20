@@ -18,11 +18,9 @@ export default function HomeRoute() {
   const lastGeoMs = useRef(0);
 
   const canPreview = useMemo(() => Boolean((location || "").trim()), [location]);
-  const kind = useMemo(() => classifyQueryType((location || "").trim()).kind, [location]);
-
   useEffect(() => {
     setMeta(
-      "Crime & Safety Dashboard",
+      "Crime & Safety Dashboard - Search tool",
       "Search by UK postcode or place name to view street-level crimes and 12-month trends."
     );
   }, []);
@@ -59,27 +57,25 @@ export default function HomeRoute() {
     }
   }
 
-function openDedicatedPage() {
-  setError("");
-  const raw = (location || "").trim();
-  if (!raw) return;
+  function openDedicatedPage() {
+    setError("");
+    const raw = (location || "").trim();
+    if (!raw) return;
 
-  const k = classifyQueryType(raw).kind; // recompute from trimmed input
+    const k = classifyQueryType(raw).kind; // recompute from trimmed input
 
-  if (k === "postcode") {
-    navigate(`/postcode/${encodeURIComponent(raw.toUpperCase())}`);
-    return;
+    if (k === "postcode") {
+      navigate(`/postcode/${encodeURIComponent(raw.toUpperCase())}`);
+      return;
+    }
+
+    if (k === "place") {
+      navigate(`/place/${encodeURIComponent(raw)}`);
+      return;
+    }
+
+    setError("Dedicated pages currently support postcodes and place names (not lat,lng). Use a postcode or place name.");
   }
-
-  if (k === "place") {
-    navigate(`/place/${encodeURIComponent(raw)}`);
-    return;
-  }
-
-  setError("Dedicated pages currently support postcodes and place names (not lat,lng). Use a postcode or place name.");
-}
-
-
   return (
     <div className="App">
       <header className="hero">
@@ -108,10 +104,9 @@ function openDedicatedPage() {
         <button onClick={fetchCrimes} disabled={loading}>
           {loading ? "Loading..." : "Fetch crimes"}
         </button>
-       <button onClick={openDedicatedPage} disabled={loading || !canPreview}>
-  See full report
-</button>
-
+        <button onClick={openDedicatedPage} disabled={loading || !canPreview}>
+          See full report
+        </button>
       </div>
 
       {canPreview && (
@@ -147,9 +142,9 @@ function openDedicatedPage() {
               {data.slice(0, 100).map((crime) => (
                 <tr key={crime.id}>
                   <td>{crime.category}</td>
-                  <td>{crime.location?.street?.name || "Unknown"}</td>
-                  <td>{crime.month || "Unknown"}</td>
-                  <td>{crime.outcome_status?.category || "None recorded"}</td>
+                  <td>{crime.location?.name || "Unknown"}</td>
+                  <td>{crime.date || "Unknown"}</td>
+                  <td>{crime.outcome || "None recorded"}</td>
                 </tr>
               ))}
             </tbody>
@@ -162,11 +157,11 @@ function openDedicatedPage() {
         <a href="https://data.police.uk/docs/" target="_blank" rel="noreferrer">
           UK Police API docs
         </a>{" "}
-        ·{" "}
+        {" | "}
         <a href="https://data.police.uk/" target="_blank" rel="noreferrer">
           data.police.uk
         </a>{" "}
-        ·{" "}
+        {" | "}
         <a
           href="https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/"
           target="_blank"
@@ -180,3 +175,4 @@ function openDedicatedPage() {
     </div>
   );
 }
+

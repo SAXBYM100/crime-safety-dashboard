@@ -5,35 +5,6 @@ import TrendChart from "../components/TrendChart";
 import { fetchLast12MonthsCountsByCategory } from "../api/trends";
 import { geocodeLocation, fetchCrimesForLocation } from "../services/existing";
 
-/**
- * Simple AdSense slot component.
- * - Replace data-ad-client + data-ad-slot with your real values after AdSense approval.
- * - This will render nothing until AdSense is approved + script is installed.
- */
-function AdSlot({ slot, style = {} }) {
-  useEffect(() => {
-    try {
-      // Ask AdSense to fill this slot (safe to call repeatedly)
-      (window.adsbygoogle = window.adsbygoogle || []).push({});
-    } catch {
-      // ignore
-    }
-  }, [slot]);
-
-  return (
-    <div style={{ margin: "16px 0" }}>
-      <ins
-        className="adsbygoogle"
-        style={{ display: "block", ...style }}
-        data-ad-client="ca-pub-XXXXXXXXXXXXXXX"
-        data-ad-slot={slot}
-        data-ad-format="auto"
-        data-full-width-responsive="true"
-      />
-    </div>
-  );
-}
-
 export default function PlacePage() {
   const params = useParams();
 
@@ -100,7 +71,7 @@ export default function PlacePage() {
       <div style={{ maxWidth: 980, margin: "0 auto", padding: "24px 16px" }}>
         <h1>{placeName} crime statistics</h1>
 
-        {status === "loading" && <p>Loading…</p>}
+        {status === "loading" && <p>Loading...</p>}
         {status === "error" && (
           <p style={{ color: "crimson" }}>
             {error || "Something went wrong loading this report."}
@@ -127,22 +98,14 @@ export default function PlacePage() {
               incidents are shown as zero to maintain continuity in the trend analysis.
             </p>
 
-            {/* AdSense placement #1: Above-the-fold (after intro, before chart) */}
-            <AdSlot slot="1111111111" />
-
             <div style={{ marginTop: 16 }}>
               <h2>12-month trend</h2>
               {trend ? <TrendChart rows={trend.rows} /> : <p>No trend data.</p>}
-              {/* AdSense placement #2: Immediately after chart (high engagement zone) */}
-              <AdSlot slot="2222222222" />
             </div>
 
             <div style={{ marginTop: 22 }}>
               <h2>Latest crimes</h2>
               <p style={{ opacity: 0.75 }}>Showing first 100 records for the latest available month.</p>
-
-              {/* AdSense placement #3: Before the table (strong RPM zone on data pages) */}
-              <AdSlot slot="3333333333" />
 
               {latestCrimes.length > 0 ? (
                 <div className="tableWrap">
@@ -159,9 +122,9 @@ export default function PlacePage() {
                       {latestCrimes.slice(0, 100).map((crime) => (
                         <tr key={crime.id}>
                           <td>{crime.category}</td>
-                          <td>{crime.location?.street?.name || "Unknown"}</td>
-                          <td>{crime.month || "Unknown"}</td>
-                          <td>{crime.outcome_status?.category || "None recorded"}</td>
+                          <td>{crime.location?.name || "Unknown"}</td>
+                          <td>{crime.date || "Unknown"}</td>
+                          <td>{crime.outcome || "None recorded"}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -171,8 +134,6 @@ export default function PlacePage() {
                 <p>No crimes returned for the latest available month.</p>
               )}
 
-              {/* AdSense placement #4: After the table (end-of-content slot) */}
-              <AdSlot slot="4444444444" />
             </div>
           </>
         )}

@@ -6,12 +6,148 @@
   padding: 1.5rem;
 }
 
+.layoutShell {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.siteHeader {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: rgba(250, 248, 241, 0.92);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--border);
+}
+
+.siteHeaderInner {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 14px 18px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  justify-content: space-between;
+}
+
+.brand {
+  font-weight: 700;
+  text-decoration: none;
+  letter-spacing: 0.2px;
+  color: var(--ink);
+}
+
+.siteNav {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  font-size: 0.95rem;
+}
+
+.siteNav a {
+  text-decoration: none;
+  color: var(--muted);
+}
+
+.siteNav a.active {
+  color: var(--accent-strong);
+  font-weight: 600;
+}
+
+.layoutMain {
+  flex: 1 1 auto;
+}
+
+.footer {
+  border-top: 1px solid var(--border);
+  background: #f7f3ea;
+  padding: 24px 16px;
+}
+
+.footerInner {
+  max-width: 1080px;
+  margin: 0 auto;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--muted);
+}
+
+.footerLinks {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.footerLinks a {
+  text-decoration: none;
+  color: var(--accent);
+}
+
+.contentWrap {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 28px 18px 42px;
+}
+
+.contentWrap p {
+  line-height: 1.7;
+  color: var(--muted);
+}
+
+.contentGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+  margin: 18px 0 28px;
+}
+
+.contentCard {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 10px 24px rgba(17, 19, 17, 0.06);
+}
+
+.ctaButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 18px;
+  background: var(--accent-strong);
+  color: #fff;
+  border-radius: 999px;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.pillList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pillList li {
+  padding: 6px 10px;
+  background: #eff4f2;
+  border: 1px solid #dde7e4;
+  border-radius: 999px;
+  font-size: 0.9rem;
+}
+
 .hero {
   display: flex;
   align-items: center;
   gap: 1rem;
-  background: #ffffff;
-  border: 1px solid #e6e6e6;
+  background: var(--card);
+  border: 1px solid var(--border);
   border-radius: 10px;
   padding: 1rem;
   margin-bottom: 1rem;
@@ -25,7 +161,7 @@
 
 h1 {
   margin: 0;
-  color: #1a237e;
+  color: var(--ink);
   line-height: 1.1;
 }
 
@@ -51,7 +187,7 @@ h1 {
 
 .form button {
   padding: 0.6rem 1rem;
-  background: #1a237e;
+  background: var(--accent);
   color: #fff;
   border: none;
   border-radius: 6px;
@@ -60,7 +196,7 @@ h1 {
 }
 
 .form button:disabled {
-  background: #9aa2d6;
+  background: #8bb0b2;
   cursor: not-allowed;
 }
 
@@ -81,8 +217,8 @@ h1 {
 .tableWrap {
   margin-top: 1rem;
   overflow-x: auto;
-  background: #fff;
-  border: 1px solid #e6e6e6;
+  background: var(--card);
+  border: 1px solid var(--border);
   border-radius: 10px;
 }
 
@@ -100,7 +236,7 @@ th, td {
 }
 
 th {
-  background: #fafafa;
+  background: #f4f0e8;
   color: #333;
   font-weight: 600;
 }
@@ -109,10 +245,6 @@ th {
   margin-top: 1rem;
   font-size: 0.9rem;
   opacity: 0.8;
-}
-
-.footerLinks a {
-  color: #1a237e;
 }
 
 @media (max-width: 600px) {
@@ -129,5 +261,9 @@ th {
   }
   table {
     min-width: 620px;
+  }
+  .siteHeaderInner {
+    flex-direction: column;
+    align-items: flex-start;
   }
 }
