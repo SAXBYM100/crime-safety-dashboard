@@ -167,6 +167,11 @@ export default function HomeRoute() {
           </Link>
         </div>
       )}
+      {!resolved && (
+        <p className="hint">
+          Explore client-ready briefs in the <Link to="/pro">Pro section</Link>.
+        </p>
+      )}
 
       {error && (
         <div className="error">

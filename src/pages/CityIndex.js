@@ -46,6 +46,7 @@ export default function CityIndex() {
               Reporting patterns, transport context, and practical next steps for comparing neighborhoods.
             </p>
             <Link to={`/city/${city.slug}`}>Open {city.name} hub</Link>
+            <Link to={`/pro/city/${city.slug}`}>Read {city.name} intelligence brief</Link>
           </div>
         ))}
       </div>

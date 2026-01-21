@@ -48,6 +48,9 @@ export default function AreasIndex() {
             <div style={{ marginTop: 8 }}>
               <Link to={`/city/${area.slug}`}>Open {area.name} city hub</Link>
             </div>
+            <div style={{ marginTop: 8 }}>
+              <Link to={`/pro/city/${area.slug}`}>View {area.name} intelligence brief</Link>
+            </div>
           </div>
         ))}
       </div>
