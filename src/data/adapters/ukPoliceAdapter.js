@@ -1,20 +1,10 @@
 import { geocodeLocation, fetchCrimesForLocation } from "../../services/existing";
 import { fetchLast12MonthsCountsByCategory } from "../../api/trends";
+import { DEFAULT_SOURCES } from "../sources";
 
-const POLICE_SOURCE = {
-  name: "UK Police API",
-  url: "https://data.police.uk",
-};
-
-const POSTCODE_SOURCE = {
-  name: "Postcodes.io",
-  url: "https://postcodes.io",
-};
-
-const OSM_SOURCE = {
-  name: "OpenStreetMap Nominatim",
-  url: "https://nominatim.openstreetmap.org",
-};
+const POLICE_SOURCE = DEFAULT_SOURCES[0];
+const POSTCODE_SOURCE = DEFAULT_SOURCES[1];
+const OSM_SOURCE = DEFAULT_SOURCES[2];
 
 export async function ukPoliceAdapter(baseProfile, options = {}) {
   const { onStatus, dateYYYYMM } = options;

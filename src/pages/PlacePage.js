@@ -6,7 +6,7 @@ import { computeSafetyScore, summarizeTrend, getTopCategories } from "../analyti
 import { getCategoryDeltas, getTopDrivers, trendTakeaway } from "../analytics/trendAnalysis";
 import MapAnalyticsPanel from "../components/MapAnalyticsPanel";
 import CrimeTable from "../components/CrimeTable";
-import { getAreaProfile } from "../data";
+import { getAreaProfile, getSourcesSummary } from "../data";
 
 export default function PlacePage() {
   const params = useParams();
@@ -26,6 +26,7 @@ export default function PlacePage() {
   const [latestCrimes, setLatestCrimes] = useState([]);
   const [trend, setTrend] = useState(null);
   const [categoryFilter, setCategoryFilter] = useState("all");
+  const [sourcesSummary, setSourcesSummary] = useState({ lastUpdated: null, sourcesText: "" });
 
   useEffect(() => {
     setMeta(
@@ -60,6 +61,7 @@ export default function PlacePage() {
         setTrend(nextProfile.safety.trend || null);
         setCrimesError(nextProfile.safety.errors?.crimes || "");
         setTrendError(nextProfile.safety.errors?.trend || "");
+        setSourcesSummary(getSourcesSummary(nextProfile));
         setStatus("ready");
         setStatusLine("");
       } catch (e) {
@@ -139,6 +141,12 @@ export default function PlacePage() {
             {resolved && (
               <p style={{ opacity: 0.75 }}>
                 Resolved to: <b>{resolved.lat.toFixed(6)}</b>, <b>{resolved.lng.toFixed(6)}</b>
+              </p>
+            )}
+            {sourcesSummary.sourcesText && (
+              <p className="sourceLine">
+                Last updated: {sourcesSummary.lastUpdated ? new Date(sourcesSummary.lastUpdated).toLocaleDateString() : "Pending"} • Sources:{" "}
+                {sourcesSummary.sourcesText}
               </p>
             )}
 

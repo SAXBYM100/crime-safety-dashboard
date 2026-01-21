@@ -5,7 +5,7 @@ import { setMeta } from "../seo";
 import { classifyQueryType } from "../services/existing";
 import MapAnalyticsPanel from "../components/MapAnalyticsPanel";
 import CrimeTable from "../components/CrimeTable";
-import { getAreaProfile } from "../data";
+import { getAreaProfile, getSourcesSummary } from "../data";
 
 export default function HomeRoute() {
   const navigate = useNavigate();
@@ -18,6 +18,7 @@ export default function HomeRoute() {
   const [resolved, setResolved] = useState(null);
   const [statusLine, setStatusLine] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
+  const [sourcesSummary, setSourcesSummary] = useState({ lastUpdated: null, sourcesText: "" });
 
   // simple throttle for geocoding calls (helps avoid rapid repeat clicks)
   const lastGeoMs = useRef(0);
@@ -68,6 +69,7 @@ export default function HomeRoute() {
         setResolved({ lat: profile.geo.lat, lng: profile.geo.lon, source: profile.query.kind });
       }
       setData(Array.isArray(profile.safety.latestCrimes) ? profile.safety.latestCrimes : []);
+      setSourcesSummary(getSourcesSummary(profile));
       if (profile.safety.errors?.crimes) {
         setError(profile.safety.errors.crimes);
       }
@@ -140,6 +142,12 @@ export default function HomeRoute() {
       {resolved && (
         <p className="hint">
           Resolved to: <b>{resolved.lat.toFixed(6)}</b>, <b>{resolved.lng.toFixed(6)}</b> ({resolved.source})
+        </p>
+      )}
+      {sourcesSummary.sourcesText && (
+        <p className="sourceLine">
+          Last updated: {sourcesSummary.lastUpdated ? new Date(sourcesSummary.lastUpdated).toLocaleDateString() : "Pending"} • Sources:{" "}
+          {sourcesSummary.sourcesText}
         </p>
       )}
 

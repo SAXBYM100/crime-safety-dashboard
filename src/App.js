@@ -11,6 +11,8 @@ import About from "./pages/About";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import Terms from "./pages/Terms";
 import Contact from "./pages/Contact";
+import Methodology from "./pages/Methodology";
+import DataSources from "./pages/DataSources";
 import GuidesIndex from "./pages/GuidesIndex";
 import GuideCrimeData from "./pages/guides/GuideCrimeData";
 import GuideSafeTravel from "./pages/guides/GuideSafeTravel";
@@ -42,6 +44,8 @@ export default function App() {
           <Route path="/city/:citySlug" element={<CityPage />} />
 
           <Route path="/about" element={<About />} />
+          <Route path="/methodology" element={<Methodology />} />
+          <Route path="/data-sources" element={<DataSources />} />
           <Route path="/privacy-policy" element={<PrivacyPolicy />} />
           <Route path="/terms" element={<Terms />} />
           <Route path="/contact" element={<Contact />} />

@@ -1,4 +1,5 @@
 import { buildEmptyProfile, mergeProfile, getSourcesSummary } from "./helpers";
+import { DEFAULT_SOURCES } from "./sources";
 import { ukPoliceAdapter } from "./adapters/ukPoliceAdapter";
 import { landRegistryAdapter } from "./adapters/landRegistryAdapter";
 import { onsAdapter } from "./adapters/onsAdapter";
@@ -35,3 +36,4 @@ export async function getAreaProfile(queryInput, options = {}) {
 }
 
 export { getSourcesSummary };
+export { DEFAULT_SOURCES };
