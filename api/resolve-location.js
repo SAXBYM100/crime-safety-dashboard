@@ -1,4 +1,8 @@
 const { rateLimit, getClientIp } = require("./_utils/rateLimit");
+const { getCache, setCache } = require("./_utils/cache");
+const { fetchWithRetry, logDevError } = require("../lib/serverHttp");
+
+const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 
 function isLikelyLatLngPair(text) {
   const raw = String(text || "").trim();
@@ -61,7 +65,11 @@ function parseCoordinateToken(token, kind) {
 }
 
 async function fetchJsonOrThrow(url, headers = {}) {
-  const res = await fetch(url, { headers: { Accept: "application/json", ...headers } });
+  const res = await fetchWithRetry(
+    url,
+    { headers: { Accept: "application/json", ...headers } },
+    { timeoutMs: 5000, retries: 1, retryDelayMs: 250 }
+  );
   if (!res.ok) {
     const body = await res.text().catch(() => "");
     let msg = `Request failed (HTTP ${res.status} ${res.statusText}).`;
@@ -73,7 +81,15 @@ async function fetchJsonOrThrow(url, headers = {}) {
     error.status = res.status;
     throw error;
   }
-  return res.json();
+  const text = await res.text().catch(() => "");
+  if (!text) return null;
+  try {
+    return JSON.parse(text);
+  } catch (err) {
+    const error = new Error("Failed to parse JSON response.");
+    error.status = res.status;
+    throw error;
+  }
 }
 
 function sendError(res, status, code, message) {
@@ -99,11 +115,17 @@ module.exports = async (req, res) => {
   }
 
   try {
+    const cacheKey = `resolve:${q.toLowerCase()}`;
+    const cached = getCache(cacheKey);
+    if (cached) return res.json(cached);
+
     if (isLikelyLatLngPair(q)) {
       const [a, b] = q.split(",").map((s) => s.trim());
       const lat = parseCoordinateToken(a, "lat");
       const lon = parseCoordinateToken(b, "lon");
-      return res.json({ lat, lon, source: "manual" });
+      const payload = { lat, lon, source: "manual" };
+      setCache(cacheKey, payload, CACHE_TTL_MS);
+      return res.json(payload);
     }
 
     if (isLikelyUKPostcode(q)) {
@@ -113,14 +135,16 @@ module.exports = async (req, res) => {
       if (!json || json.status !== 200 || !json.result) {
         return sendError(res, 404, "NOT_FOUND", "Postcode not found.");
       }
-      return res.json({
+      const payload = {
         lat: json.result.latitude,
         lon: json.result.longitude,
         source: "postcode",
         postcode: json.result.postcode,
         district: json.result.admin_district,
         region: json.result.region,
-      });
+      };
+      setCache(cacheKey, payload, CACHE_TTL_MS);
+      return res.json(payload);
     }
 
     const encoded = encodeURIComponent(q);
@@ -138,9 +162,12 @@ module.exports = async (req, res) => {
     if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
       return sendError(res, 500, "BAD_GEOCODE", "Geocoder returned an invalid coordinate.");
     }
-    return res.json({ lat, lon, source: "place", name: first.display_name || q });
+    const payload = { lat, lon, source: "place", name: first.display_name || q };
+    setCache(cacheKey, payload, CACHE_TTL_MS);
+    return res.json(payload);
   } catch (err) {
     const status = err.status || 500;
+    logDevError("resolve-location", err, { query: q, status });
     return sendError(res, status, "GEOCODE_FAILED", err.message || "Geocoding failed.");
   }
 };
