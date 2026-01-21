@@ -2,7 +2,7 @@ import React, { useEffect } from "react";
 import { Link } from "react-router-dom";
 import { setMeta } from "../../seo";
 import AdSlot from "../../components/AdSlot";
-import PageHeaderImage from "../../components/PageHeaderImage";
+import PageHeaderImage from "../../components/media/PageHeaderImage";
 
 export default function GuideSafeTravel() {
   useEffect(() => {
@@ -15,14 +15,13 @@ export default function GuideSafeTravel() {
   return (
     <div className="contentWrap">
       <PageHeaderImage
-        src={`${process.env.PUBLIC_URL}/images/areas/street.jpeg`}
-        alt="Urban street scene for evening travel context"
+        src="/images/areas/uk-street.jpg"
+        alt="UK residential street scene for guide context"
         title="Staying safe at night"
         subtitle="Practical guidance for night travel, commuting, and social plans."
         variant="guide"
       />
 
-      <h1>Staying safe at night</h1>
       <p>
         Night-time travel can feel uncertain, especially in unfamiliar areas. Crime data can help you understand common
         patterns, but the most valuable safety improvements come from practical habits. This guide combines data

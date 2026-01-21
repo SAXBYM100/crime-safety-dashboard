@@ -13,7 +13,6 @@ import mapPin from "@iconify/icons-lucide/map-pin";
 import bookOpen from "@iconify/icons-lucide/book-open";
 import building2 from "@iconify/icons-lucide/building-2";
 import HeroTypeHeadline from "../components/HeroTypeHeadline";
-import ResponsiveImage from "../components/ResponsiveImage";
 
 export default function HomePage() {
   const navigate = useNavigate();
@@ -52,13 +51,6 @@ export default function HomePage() {
   return (
     <>
       <section className="homeHero">
-        <img
-          className="homeHeroBg"
-          src={`${process.env.PUBLIC_URL}/visuals/home-hero.jpg`}
-          alt="Abstract UK cityscape texture"
-          loading="eager"
-          fetchpriority="high"
-        />
         <div className="homeHeroOverlay" />
         <div className="homeHeroContent">
           <div className="heroTextWrap">
@@ -130,16 +122,6 @@ export default function HomePage() {
               Independent, data-driven insights
             </span>
           </div>
-        </div>
-      </section>
-
-      <section className="homeSupporting">
-        <div className="homeSupportingInner">
-          <ResponsiveImage
-            src={`${process.env.PUBLIC_URL}/images/hero/uk-map.jpeg`}
-            alt="UK map overview showing the national context"
-            aspectRatio="21/9"
-          />
         </div>
       </section>
 

@@ -2,7 +2,7 @@ import React, { useEffect } from "react";
 import { Link } from "react-router-dom";
 import { setMeta } from "../../seo";
 import AdSlot from "../../components/AdSlot";
-import PageHeaderImage from "../../components/PageHeaderImage";
+import PageHeaderImage from "../../components/media/PageHeaderImage";
 
 export default function GuideCrimeData() {
   useEffect(() => {
@@ -15,14 +15,13 @@ export default function GuideCrimeData() {
   return (
     <div className="contentWrap">
       <PageHeaderImage
-        src={`${process.env.PUBLIC_URL}/images/hero/uk-map.jpeg`}
-        alt="UK map visualization representing national crime data"
+        src="/images/areas/uk-street.jpg"
+        alt="UK residential street scene for guide context"
         title="How UK crime data works"
         subtitle="Understand reporting cycles, category definitions, and how to compare locations responsibly."
         variant="guide"
       />
 
-      <h1>How UK crime data works</h1>
       <p>
         Crime data is a public record, but it is not a perfect mirror of reality. The UK police data you see in the
         dashboard is collected by police forces, published monthly, and then aggregated on data.police.uk. This means

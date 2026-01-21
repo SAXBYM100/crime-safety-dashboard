@@ -340,10 +340,8 @@
   position: relative;
   width: 100%;
   overflow: hidden;
-}
-
-.responsiveImageFill {
-  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.9), rgba(30, 41, 59, 0.9));
 }
 
 .responsiveImage {
@@ -352,6 +350,10 @@
   object-fit: cover;
   display: block;
   max-width: 100%;
+}
+
+.responsiveImageError {
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.85), rgba(30, 41, 59, 0.85));
 }
 
 .pageHeader {
@@ -363,17 +365,14 @@
   margin-bottom: 24px;
 }
 
-.pageHeader--home {
-  height: clamp(320px, 60vh, 720px);
-}
-
 .pageHeader--city,
-.pageHeader--guide {
-  height: clamp(220px, 30vh, 420px);
+.pageHeader--guide,
+.pageHeader--guides {
+  height: auto;
 }
 
 .pageHeader--area {
-  height: clamp(180px, 26vh, 320px);
+  height: auto;
 }
 
 .pageHeaderOverlay {
@@ -419,22 +418,6 @@
   border-radius: 0;
 }
 
-.homeSupporting {
-  background: var(--cloud);
-  padding: 28px 16px 8px;
-}
-
-.homeSupportingInner {
-  max-width: 1080px;
-  margin: 0 auto;
-}
-
-.homeSupporting .responsiveImageWrap {
-  border-radius: 18px;
-  border: 1px solid var(--border);
-  box-shadow: 0 16px 32px rgba(8, 15, 24, 0.18);
-}
-
 .homeHero {
   position: relative;
   width: 100vw;
@@ -444,6 +427,7 @@
   align-items: center;
   color: #fff;
   overflow-x: hidden;
+  background: #0f172a;
 }
 
 .homeHeroBg {

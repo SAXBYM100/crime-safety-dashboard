@@ -2,7 +2,7 @@ import React, { useEffect } from "react";
 import { Link } from "react-router-dom";
 import { setMeta } from "../seo";
 import AdSlot from "../components/AdSlot";
-import PageHeaderImage from "../components/PageHeaderImage";
+import PageHeaderImage from "../components/media/PageHeaderImage";
 
 export default function About() {
   useEffect(() => {
@@ -15,10 +15,8 @@ export default function About() {
   return (
     <div className="contentWrap">
       <PageHeaderImage
-        src={`${process.env.PUBLIC_URL}/images/hero/uk-map.jpeg`}
+        src="/images/hero/uk-map.jpg"
         alt="UK map image representing national coverage"
-        title="About Area IQ"
-        subtitle="Transparent crime data, clear context, and practical guidance for real decisions."
         variant="guide"
       />
       <h1>About Crime &amp; Safety Dashboard</h1>

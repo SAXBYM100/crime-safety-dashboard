@@ -2,7 +2,7 @@ import React, { useEffect } from "react";
 import { Link } from "react-router-dom";
 import { setMeta } from "../../seo";
 import AdSlot from "../../components/AdSlot";
-import PageHeaderImage from "../../components/PageHeaderImage";
+import PageHeaderImage from "../../components/media/PageHeaderImage";
 
 export default function GuideMovingHome() {
   useEffect(() => {
@@ -15,14 +15,13 @@ export default function GuideMovingHome() {
   return (
     <div className="contentWrap">
       <PageHeaderImage
-        src={`${process.env.PUBLIC_URL}/images/areas/uk-street.jpeg`}
+        src="/images/areas/uk-street.jpg"
         alt="UK residential street with housing context"
         title="Moving to a new area"
         subtitle="A balanced checklist for using crime data alongside local context."
         variant="guide"
       />
 
-      <h1>Moving to a new area</h1>
       <p>
         Moving to a new area comes with a long list of questions: commuting time, local schools, amenities, rent, and
         of course safety. Crime data can help you build a clearer picture, but it should not be used in isolation. This

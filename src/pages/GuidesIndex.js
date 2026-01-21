@@ -2,7 +2,7 @@ import React, { useEffect } from "react";
 import { Link } from "react-router-dom";
 import { setMeta } from "../seo";
 import AdSlot from "../components/AdSlot";
-import ResponsiveImage from "../components/ResponsiveImage";
+import PageHeaderImage from "../components/media/PageHeaderImage";
 
 export default function GuidesIndex() {
   useEffect(() => {
@@ -14,24 +14,16 @@ export default function GuidesIndex() {
 
   return (
     <div className="contentWrap">
-      <div className="contentHero">
-        <div className="heroIntro">
-          <h1>Safety Guides</h1>
-          <p>
-            These guides explain how to interpret UK crime data and how to translate information into practical safety
-            choices. Each guide is written to be actionable, not alarming, and to help you use the dashboard responsibly.
-          </p>
-          <div className="heroBadgeRow">
-            <span className="heroBadge">Plain-English guidance</span>
-            <span className="heroBadge">Decision-ready tips</span>
-          </div>
-        </div>
-        <ResponsiveImage
-          className="heroVisual"
-          src={`${process.env.PUBLIC_URL}/images/hero/uk-map.jpeg`}
-          alt="UK map image showing national coverage"
-          aspectRatio="4/3"
-        />
+      <PageHeaderImage
+        src="/images/areas/uk-street.jpg"
+        alt="UK residential street scene for guide context"
+        title="Safety Guides"
+        subtitle="Plain-English guidance to help you interpret UK crime data and make informed decisions."
+        variant="guides"
+      />
+      <div className="heroBadgeRow">
+        <span className="heroBadge">Plain-English guidance</span>
+        <span className="heroBadge">Decision-ready tips</span>
       </div>
 
       <div className="contentGrid">

@@ -2,7 +2,7 @@ import React, { useEffect, useMemo } from "react";
 import { Link, useParams } from "react-router-dom";
 import { setMeta } from "../../seo";
 import AdSlot from "../../components/AdSlot";
-import PageHeaderImage from "../../components/PageHeaderImage";
+import PageHeaderImage from "../../components/media/PageHeaderImage";
 
 const CITY_CONTENT = {
   london: {
@@ -36,17 +36,17 @@ const CITY_CONTENT = {
 
 const CITY_IMAGES = {
   manchester: {
-    src: `${process.env.PUBLIC_URL}/images/cities/manchester.jpeg`,
+    src: "/images/cities/manchester.jpg",
     alt: "Aerial view of Manchester city centre skyline",
   },
   birmingham: {
-    src: `${process.env.PUBLIC_URL}/images/cities/birmingham.jpeg`,
+    src: "/images/cities/birmingham.jpg",
     alt: "Birmingham city centre skyline and surrounding districts",
   },
 };
 
 const CITY_FALLBACK = {
-  src: `${process.env.PUBLIC_URL}/images/hero/uk-map.jpeg`,
+  src: "/images/hero/uk-map.jpg",
   alt: "UK map overview for city context",
 };
 
@@ -95,18 +95,11 @@ export default function CityPage() {
         className="pageHeaderFull"
       />
       <div className="contentWrap">
-      <div className="cityBanner">
-        <div>
-          <h1>{city.name} city hub</h1>
-          <p>{city.overview}</p>
-          <div className="heroBadgeRow">
-            <span className="heroBadge">City-level context</span>
-            <span className="heroBadge">Decision-ready notes</span>
-            <span className="heroBadge">Linked area pages</span>
-          </div>
+        <div className="heroBadgeRow">
+          <span className="heroBadge">City-level context</span>
+          <span className="heroBadge">Decision-ready notes</span>
+          <span className="heroBadge">Linked area pages</span>
         </div>
-        <img src={`${process.env.PUBLIC_URL}/visuals/city-banner.svg`} alt="Abstract city skyline illustration" />
-      </div>
 
       <div className="iconGrid">
         <div className="iconCard">
