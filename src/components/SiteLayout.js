@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
 import "../App.css";
 import { Icon } from "@iconify/react";
@@ -7,10 +7,12 @@ import bookOpen from "@iconify/icons-lucide/book-open";
 import building2 from "@iconify/icons-lucide/building-2";
 import info from "@iconify/icons-lucide/info";
 import mail from "@iconify/icons-lucide/mail";
+import menu from "@iconify/icons-lucide/menu";
+import x from "@iconify/icons-lucide/x";
 
-function NavItem({ to, label }) {
+function NavItem({ to, label, onClick }) {
   return (
-    <NavLink to={to} className={({ isActive }) => (isActive ? "active" : "")}>
+    <NavLink to={to} onClick={onClick} className={({ isActive }) => (isActive ? "active" : "")}>
       {label}
     </NavLink>
   );
@@ -19,6 +21,11 @@ function NavItem({ to, label }) {
 export default function SiteLayout() {
   const { pathname } = useLocation();
   const isTool = pathname.startsWith("/app") || pathname.startsWith("/postcode") || pathname.startsWith("/place");
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  useEffect(() => {
+    setMenuOpen(false);
+  }, [pathname]);
 
   return (
     <div className="layoutShell">
@@ -28,15 +35,25 @@ export default function SiteLayout() {
             <img src={`${process.env.PUBLIC_URL}/brand/area-iq-mark.svg`} alt="" aria-hidden="true" />
             <span>Area IQ</span>
           </Link>
-          <nav className="siteNav">
-            <NavItem to="/app" label={<span className="navItem"><Icon icon={mapPin} />Dashboard</span>} />
-            <NavItem to="/guides" label={<span className="navItem"><Icon icon={bookOpen} />Guides</span>} />
-            <NavItem to="/areas" label={<span className="navItem"><Icon icon={building2} />Area Pages</span>} />
-            <NavItem to="/city" label={<span className="navItem"><Icon icon={building2} />City Hubs</span>} />
-            <NavItem to="/about" label={<span className="navItem"><Icon icon={info} />About</span>} />
-            <NavItem to="/contact" label={<span className="navItem"><Icon icon={mail} />Contact</span>} />
+          <button
+            type="button"
+            className="navToggle"
+            aria-label={menuOpen ? "Close navigation menu" : "Open navigation menu"}
+            aria-expanded={menuOpen}
+            onClick={() => setMenuOpen((open) => !open)}
+          >
+            <Icon icon={menuOpen ? x : menu} />
+          </button>
+          <nav className={`siteNav ${menuOpen ? "siteNavOpen" : ""}`}>
+            <NavItem to="/app" onClick={() => setMenuOpen(false)} label={<span className="navItem"><Icon icon={mapPin} />Dashboard</span>} />
+            <NavItem to="/guides" onClick={() => setMenuOpen(false)} label={<span className="navItem"><Icon icon={bookOpen} />Guides</span>} />
+            <NavItem to="/areas" onClick={() => setMenuOpen(false)} label={<span className="navItem"><Icon icon={building2} />Area Pages</span>} />
+            <NavItem to="/city" onClick={() => setMenuOpen(false)} label={<span className="navItem"><Icon icon={building2} />City Hubs</span>} />
+            <NavItem to="/about" onClick={() => setMenuOpen(false)} label={<span className="navItem"><Icon icon={info} />About</span>} />
+            <NavItem to="/contact" onClick={() => setMenuOpen(false)} label={<span className="navItem"><Icon icon={mail} />Contact</span>} />
           </nav>
         </div>
+        {menuOpen && <div className="navScrim" onClick={() => setMenuOpen(false)} aria-hidden="true" />}
       </header>
 
       <main className="layoutMain" aria-live={isTool ? "polite" : "off"}>
