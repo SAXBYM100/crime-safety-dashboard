@@ -2,9 +2,10 @@ import React, { useMemo, useRef, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import "../App.css";
 import { setMeta } from "../seo";
-import { classifyQueryType, geocodeLocation, fetchCrimesForLocation } from "../services/existing";
+import { classifyQueryType } from "../services/existing";
 import MapAnalyticsPanel from "../components/MapAnalyticsPanel";
 import CrimeTable from "../components/CrimeTable";
+import { getAreaProfile } from "../data";
 
 export default function HomeRoute() {
   const navigate = useNavigate();
@@ -51,13 +52,25 @@ export default function HomeRoute() {
       if (wait > 0) await new Promise((r) => setTimeout(r, wait));
       lastGeoMs.current = Date.now();
 
-      const { lat, lng, source } = await geocodeLocation(location);
-      setResolved({ lat, lng, source });
-
-      setStatusLine("Fetching latest crimes...");
-      const crimes = await fetchCrimesForLocation(lat, lng, d);
-      setData(Array.isArray(crimes) ? crimes : []);
-      setStatusLine("Analyzing results...");
+      const raw = location.trim();
+      const kind = classifyQueryType(raw).kind;
+      if (kind === "empty") {
+        setError("Enter a location to search.");
+        setLoading(false);
+        return;
+      }
+      const queryKind = kind === "latlng" ? "latlng" : kind === "postcode" ? "postcode" : "place";
+      const profile = await getAreaProfile(
+        { kind: queryKind, value: raw },
+        { dateYYYYMM: d, onStatus: setStatusLine }
+      );
+      if (profile.geo?.lat != null && profile.geo?.lon != null) {
+        setResolved({ lat: profile.geo.lat, lng: profile.geo.lon, source: profile.query.kind });
+      }
+      setData(Array.isArray(profile.safety.latestCrimes) ? profile.safety.latestCrimes : []);
+      if (profile.safety.errors?.crimes) {
+        setError(profile.safety.errors.crimes);
+      }
     } catch (e) {
       setError(e.message || "Something went wrong.");
     } finally {

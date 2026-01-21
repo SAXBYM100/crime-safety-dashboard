@@ -3,12 +3,11 @@ import { useParams } from "react-router-dom";
 import { normalizePostcodeParam } from "../utils/slug";
 import { setMeta } from "../seo";
 import TrendChart from "../components/TrendChart";
-import { fetchLast12MonthsCountsByCategory } from "../api/trends";
-import { geocodePostcode, fetchCrimesForLocation } from "../services/existing";
 import { computeSafetyScore, summarizeTrend, getTopCategories } from "../analytics/safetyScore";
 import { getCategoryDeltas, getTopDrivers, trendTakeaway } from "../analytics/trendAnalysis";
 import MapAnalyticsPanel from "../components/MapAnalyticsPanel";
 import CrimeTable from "../components/CrimeTable";
+import { getAreaProfile } from "../data";
 
 export default function PostcodePage() {
   const params = useParams();
@@ -45,31 +44,18 @@ export default function PostcodePage() {
       setStatusLine("Resolving location...");
 
       try {
-        const geo = await geocodePostcode(postcode);
+        const nextProfile = await getAreaProfile(
+          { kind: "postcode", value: postcode },
+          { onStatus: setStatusLine }
+        );
         if (!mounted) return;
-        setResolved({ lat: geo.lat, lng: geo.lng });
-
-        // latest crimes = current month
-        setStatusLine("Fetching latest crimes...");
-        try {
-          const crimes = await fetchCrimesForLocation(geo.lat, geo.lng, "");
-          if (!mounted) return;
-          setLatestCrimes(Array.isArray(crimes) ? crimes : []);
-        } catch (crimeErr) {
-          if (!mounted) return;
-          setCrimesError("Latest crime data is temporarily unavailable.");
+        if (nextProfile.geo?.lat != null && nextProfile.geo?.lon != null) {
+          setResolved({ lat: nextProfile.geo.lat, lng: nextProfile.geo.lon });
         }
-
-        setStatusLine("Analyzing trends...");
-        try {
-          const t = await fetchLast12MonthsCountsByCategory(geo.lat, geo.lng);
-          if (!mounted) return;
-          setTrend(t);
-        } catch (trendErr) {
-          if (!mounted) return;
-          setTrendError("Trend data is temporarily unavailable.");
-        }
-
+        setLatestCrimes(nextProfile.safety.latestCrimes || []);
+        setTrend(nextProfile.safety.trend || null);
+        setCrimesError(nextProfile.safety.errors?.crimes || "");
+        setTrendError(nextProfile.safety.errors?.trend || "");
         setStatus("ready");
         setStatusLine("");
       } catch (e) {
