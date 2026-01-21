@@ -1,6 +1,7 @@
 const { getCache, setCache } = require("./_utils/cache");
 const { rateLimit, getClientIp } = require("./_utils/rateLimit");
 const { getAreaReport } = require("../lib/providerRegistry");
+const { logDevError } = require("../lib/serverHttp");
 
 const CACHE_TTL_MS = 5 * 60 * 1000;
 
@@ -41,6 +42,11 @@ module.exports = async (req, res) => {
     return sendError(res, 400, "OUT_OF_RANGE", "lat must be between -90 and 90, lon between -180 and 180.");
   }
 
+  const monthPattern = /^\d{4}-\d{2}$/;
+  if ((from && !monthPattern.test(from)) || (to && !monthPattern.test(to))) {
+    return sendError(res, 400, "INVALID_DATE", "from/to must be YYYY-MM when provided.");
+  }
+
   const cacheKey = `area:${lat.toFixed(5)}:${lon.toFixed(5)}:${radius}:${from}:${to}:${name}`;
   const cached = getCache(cacheKey);
   if (cached) {
@@ -54,6 +60,7 @@ module.exports = async (req, res) => {
     res.setHeader("Cache-Control", "public, s-maxage=300, stale-while-revalidate=600");
     return res.json(report);
   } catch (err) {
+    logDevError("area-report", err, { lat, lon, from, to });
     return sendError(res, 502, "PROVIDER_ERROR", err.message || "Provider failed.", err.details || []);
   }
 };

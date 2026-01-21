@@ -1,5 +1,6 @@
 const { getCache, setCache } = require("./_utils/cache");
 const { rateLimit, getClientIp } = require("./_utils/rateLimit");
+const { fetchJsonWithRetry, logDevError } = require("../lib/serverHttp");
 
 const CACHE_TTL_MS = 6 * 60 * 60 * 1000;
 
@@ -25,11 +26,36 @@ async function fetchMonth(lat, lon, yyyymm) {
     lat
   )}&lng=${encodeURIComponent(lon)}&date=${encodeURIComponent(yyyymm)}`;
 
-  const res = await fetch(url, { headers: { Accept: "application/json" } });
-  if (res.status === 404 || res.status === 429 || res.status === 503) return [];
-  if (!res.ok) return [];
-  const json = await res.json().catch(() => []);
-  return Array.isArray(json) ? json : [];
+  try {
+    const json = await fetchJsonWithRetry(
+      url,
+      { headers: { Accept: "application/json" } },
+      { timeoutMs: 4500, retries: 1, retryDelayMs: 250 }
+    );
+    return Array.isArray(json) ? json : [];
+  } catch (err) {
+    if (err?.status === 404 || err?.status === 429 || err?.status === 503) return [];
+    logDevError("trends.fetch", err, { month: yyyymm, lat, lon });
+    return [];
+  }
+}
+
+async function mapWithConcurrency(items, limit, mapper) {
+  const results = new Array(items.length);
+  let nextIndex = 0;
+  const workerCount = Math.min(limit, items.length);
+
+  async function worker() {
+    while (true) {
+      const current = nextIndex;
+      nextIndex += 1;
+      if (current >= items.length) break;
+      results[current] = await mapper(items[current], current);
+    }
+  }
+
+  await Promise.all(Array.from({ length: workerCount }, () => worker()));
+  return results;
 }
 
 function sendError(res, status, code, message) {
@@ -54,6 +80,9 @@ module.exports = async (req, res) => {
   if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
     return sendError(res, 400, "INVALID_COORDS", "lat and lon must be valid numbers.");
   }
+  if (Math.abs(lat) > 90 || Math.abs(lon) > 180) {
+    return sendError(res, 400, "OUT_OF_RANGE", "lat must be between -90 and 90, lon between -180 and 180.");
+  }
 
   const cacheKey = `trends:${lat.toFixed(5)}:${lon.toFixed(5)}`;
   const cached = getCache(cacheKey);
@@ -63,17 +92,15 @@ module.exports = async (req, res) => {
   }
 
   const months = last12Months();
-  const series = [];
-
-  for (const m of months) {
+  const series = await mapWithConcurrency(months, 4, async (m) => {
     const crimes = await fetchMonth(lat, lon, m);
     const counts = {};
     for (const c of crimes) {
       const cat = c.category || "unknown";
       counts[cat] = (counts[cat] || 0) + 1;
     }
-    series.push({ month: m, counts });
-  }
+    return { month: m, counts };
+  });
 
   const categorySet = new Set();
   for (const row of series) Object.keys(row.counts).forEach((k) => categorySet.add(k));
