@@ -559,7 +559,7 @@
 }
 
 .bulletList li::before {
-  content: "•";
+  content: "-";
   margin-right: 8px;
   color: var(--accent);
 }
@@ -1170,6 +1170,69 @@ th {
     flex-direction: column;
     align-items: flex-start;
   }
+
+  .siteNav {
+    width: 100%;
+    gap: 10px;
+  }
+
+  .siteNav a {
+    padding: 8px 6px;
+  }
+
+  .homeHero {
+    min-height: 480px;
+  }
+
+  .homeHeroContent {
+    padding: 48px 16px;
+  }
+
+  .homeHeroContent h1 {
+    font-size: clamp(2.1rem, 8vw, 3rem);
+    line-height: 1.12;
+  }
+
+  .homeHeroContent p {
+    font-size: 1rem;
+  }
+
+  .heroBadge {
+    font-size: 0.78rem;
+  }
+
+  .homeSearch {
+    margin-top: 24px;
+  }
+
+  .homeSearchShell {
+    padding: 4px 10px 4px 14px;
+  }
+
+  .homeSearchShell input {
+    height: 50px;
+    font-size: 1rem;
+  }
+
+  .homeSearchButton {
+    height: 50px;
+    padding: 0 16px;
+    font-size: 0.98rem;
+  }
+
+  .chipButton {
+    font-size: 0.9rem;
+  }
+
+  .contentWrap {
+    padding: 22px 16px 34px;
+  }
+
+  .contentGrid,
+  .ctaGrid,
+  .iconGrid {
+    gap: 12px;
+  }
 }
 
 @media (max-width: 720px) {
@@ -1202,5 +1265,31 @@ th {
 
   .homeMain h2 {
     font-size: clamp(1.6rem, 6vw, 2rem);
+  }
+}
+
+@media (max-width: 900px) {
+  .homeHero {
+    min-height: 520px;
+  }
+
+  .homeHeroContent {
+    padding: 56px 18px;
+  }
+
+  .homeHeroContent h1 {
+    font-size: clamp(2.4rem, 6.2vw, 3.6rem);
+  }
+
+  .homeMain p,
+  .homeMain li {
+    font-size: 1.05rem;
+  }
+
+  .contentHero,
+  .guideHero,
+  .cityBanner {
+    grid-template-columns: 1fr;
+    padding: 22px;
   }
 }
