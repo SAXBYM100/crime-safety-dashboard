@@ -32,6 +32,7 @@ export default function AdSlot({ slot, contentReady = true, style = {} }) {
   const { pathname } = useLocation();
   const eligible = useMemo(() => isEligiblePath(pathname), [pathname]);
   const client = process.env.REACT_APP_ADSENSE_CLIENT || DEFAULT_CLIENT;
+  const placeholder = style?.minHeight ? undefined : { minHeight: 140 };
 
   useEffect(() => {
     if (!eligible || !contentReady) return;
@@ -46,7 +47,28 @@ export default function AdSlot({ slot, contentReady = true, style = {} }) {
   if (!eligible || !contentReady) return null;
 
   return (
-    <div style={{ margin: "18px 0" }}>
+    <div style={{ margin: "18px 0", position: "relative", ...placeholder }}>
+      <div
+        className="adPlaceholder"
+        aria-hidden="true"
+        style={{
+          position: "absolute",
+          inset: 0,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          border: "1px dashed #d7d9d7",
+          borderRadius: 12,
+          color: "#7a7f7e",
+          fontSize: 12,
+          letterSpacing: "0.08em",
+          textTransform: "uppercase",
+          background: "#faf9f6",
+          pointerEvents: "none",
+        }}
+      >
+        Sponsored
+      </div>
       <ins
         className="adsbygoogle"
         style={{ display: "block", ...style }}

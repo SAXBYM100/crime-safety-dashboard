@@ -13,11 +13,24 @@ export default function GuidesIndex() {
 
   return (
     <div className="contentWrap">
-      <h1>Safety Guides</h1>
-      <p>
-        These guides explain how to interpret UK crime data and how to translate information into practical safety
-        choices. Each guide is written to be actionable, not alarming, and to help you use the dashboard responsibly.
-      </p>
+      <div className="contentHero">
+        <div className="heroIntro">
+          <h1>Safety Guides</h1>
+          <p>
+            These guides explain how to interpret UK crime data and how to translate information into practical safety
+            choices. Each guide is written to be actionable, not alarming, and to help you use the dashboard responsibly.
+          </p>
+          <div className="heroBadgeRow">
+            <span className="heroBadge">Plain-English guidance</span>
+            <span className="heroBadge">Decision-ready tips</span>
+          </div>
+        </div>
+        <img
+          className="heroVisual"
+          src={`${process.env.PUBLIC_URL}/visuals/guide-abstract.svg`}
+          alt="Abstract guide illustration"
+        />
+      </div>
 
       <div className="contentGrid">
         <div className="contentCard">

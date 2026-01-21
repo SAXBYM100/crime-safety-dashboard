@@ -1,6 +1,12 @@
 import React from "react";
 import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
 import "../App.css";
+import { Icon } from "@iconify/react";
+import mapPin from "@iconify/icons-lucide/map-pin";
+import bookOpen from "@iconify/icons-lucide/book-open";
+import building2 from "@iconify/icons-lucide/building-2";
+import info from "@iconify/icons-lucide/info";
+import mail from "@iconify/icons-lucide/mail";
 
 function NavItem({ to, label }) {
   return (
@@ -19,14 +25,16 @@ export default function SiteLayout() {
       <header className="siteHeader">
         <div className="siteHeaderInner">
           <Link to="/" className="brand">
-            Crime &amp; Safety
+            <img src={`${process.env.PUBLIC_URL}/brand/area-iq-mark.svg`} alt="" aria-hidden="true" />
+            <span>Area IQ</span>
           </Link>
           <nav className="siteNav">
-            <NavItem to="/app" label="Dashboard" />
-            <NavItem to="/guides" label="Guides" />
-            <NavItem to="/areas" label="Area Pages" />
-            <NavItem to="/about" label="About" />
-            <NavItem to="/contact" label="Contact" />
+            <NavItem to="/app" label={<span className="navItem"><Icon icon={mapPin} />Dashboard</span>} />
+            <NavItem to="/guides" label={<span className="navItem"><Icon icon={bookOpen} />Guides</span>} />
+            <NavItem to="/areas" label={<span className="navItem"><Icon icon={building2} />Area Pages</span>} />
+            <NavItem to="/city" label={<span className="navItem"><Icon icon={building2} />City Hubs</span>} />
+            <NavItem to="/about" label={<span className="navItem"><Icon icon={info} />About</span>} />
+            <NavItem to="/contact" label={<span className="navItem"><Icon icon={mail} />Contact</span>} />
           </nav>
         </div>
       </header>

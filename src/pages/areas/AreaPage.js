@@ -67,8 +67,43 @@ export default function AreaPage() {
 
   return (
     <div className="contentWrap">
-      <h1>{area.name} area guide</h1>
-      <p>{area.overview}</p>
+      <div className="cityBanner">
+        <div>
+          <h1>{area.name} safety + property guide</h1>
+          <p>{area.overview}</p>
+          <div className="heroBadgeRow">
+            <span className="heroBadge">Data-led context</span>
+            <span className="heroBadge">Neighborhood insights</span>
+            <span className="heroBadge">Updated monthly</span>
+          </div>
+        </div>
+        <img src={`${process.env.PUBLIC_URL}/visuals/city-banner.svg`} alt="Abstract city skyline illustration" />
+      </div>
+
+      <div className="iconGrid">
+        <div className="iconCard">
+          <img src={`${process.env.PUBLIC_URL}/visuals/icons/safety.svg`} alt="Safety icon" />
+          <h3>Safety signals</h3>
+          <p>Understand how reported incidents cluster across hubs, corridors, and residential zones.</p>
+        </div>
+        <div className="iconCard">
+          <img src={`${process.env.PUBLIC_URL}/visuals/icons/property.svg`} alt="Property icon" />
+          <h3>Property context</h3>
+          <p>Track how reported activity aligns with property demand and livability factors.</p>
+        </div>
+        <div className="iconCard">
+          <img src={`${process.env.PUBLIC_URL}/visuals/icons/risk.svg`} alt="Risk icon" />
+          <h3>Risk indicators</h3>
+          <p>Flood and environmental signals are added alongside crime data as sources expand.</p>
+        </div>
+        <div className="iconCard">
+          <img src={`${process.env.PUBLIC_URL}/visuals/icons/livability.svg`} alt="Livability icon" />
+          <h3>Livability</h3>
+          <p>Compare parks, schools, and local amenities when choosing between neighborhoods.</p>
+        </div>
+      </div>
+
+      <p>{area.context}</p>
       <p>
         The dashboard is most useful when you get specific. Instead of treating a city as one data point, search a few
         postcodes around where you live, work, or plan to visit. This helps you avoid averages that hide local
@@ -116,6 +151,10 @@ export default function AreaPage() {
         Ready to explore? Open the <Link to="/app">crime dashboard</Link> and search a postcode in {area.name}. You can
         then compare neighboring postcodes or use the <Link to="/guides/how-uk-crime-data-works">crime data guide</Link>{" "}
         to interpret the results carefully.
+      </p>
+      <p>
+        Prefer a higher-level view? Visit the <Link to={`/city/${areaSlug}`}>{area.name} city hub</Link> for a summary
+        of reporting patterns and livability context.
       </p>
     </div>
   );

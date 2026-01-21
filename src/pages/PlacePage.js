@@ -4,6 +4,10 @@ import { setMeta } from "../seo";
 import TrendChart from "../components/TrendChart";
 import { fetchLast12MonthsCountsByCategory } from "../api/trends";
 import { geocodeLocation, fetchCrimesForLocation } from "../services/existing";
+import { computeSafetyScore, summarizeTrend, getTopCategories } from "../analytics/safetyScore";
+import { getCategoryDeltas, getTopDrivers, trendTakeaway } from "../analytics/trendAnalysis";
+import MapAnalyticsPanel from "../components/MapAnalyticsPanel";
+import CrimeTable from "../components/CrimeTable";
 
 export default function PlacePage() {
   const params = useParams();
@@ -16,9 +20,13 @@ export default function PlacePage() {
 
   const [status, setStatus] = useState("idle");
   const [error, setError] = useState("");
+  const [statusLine, setStatusLine] = useState("");
+  const [trendError, setTrendError] = useState("");
+  const [crimesError, setCrimesError] = useState("");
   const [resolved, setResolved] = useState(null);
   const [latestCrimes, setLatestCrimes] = useState([]);
   const [trend, setTrend] = useState(null);
+  const [categoryFilter, setCategoryFilter] = useState("all");
 
   useEffect(() => {
     setMeta(
@@ -33,9 +41,12 @@ export default function PlacePage() {
     async function run() {
       setStatus("loading");
       setError("");
+      setTrendError("");
+      setCrimesError("");
       setResolved(null);
       setLatestCrimes([]);
       setTrend(null);
+      setStatusLine("Resolving location...");
 
       try {
         const geo = await geocodeLocation(placeName);
@@ -43,20 +54,34 @@ export default function PlacePage() {
         setResolved({ lat: geo.lat, lng: geo.lng });
 
         // Latest crimes (no date -> latest available; your service already handles 404 as [])
-        const crimes = await fetchCrimesForLocation(geo.lat, geo.lng);
-        if (!mounted) return;
-        setLatestCrimes(Array.isArray(crimes) ? crimes : []);
+        setStatusLine("Fetching latest crimes...");
+        try {
+          const crimes = await fetchCrimesForLocation(geo.lat, geo.lng);
+          if (!mounted) return;
+          setLatestCrimes(Array.isArray(crimes) ? crimes : []);
+        } catch (crimeErr) {
+          if (!mounted) return;
+          setCrimesError("Latest crime data is temporarily unavailable.");
+        }
 
         // Trend chart (your trends.js now tolerates missing months)
-        const t = await fetchLast12MonthsCountsByCategory(geo.lat, geo.lng);
-        if (!mounted) return;
-        setTrend(t);
+        setStatusLine("Analyzing trends...");
+        try {
+          const t = await fetchLast12MonthsCountsByCategory(geo.lat, geo.lng);
+          if (!mounted) return;
+          setTrend(t);
+        } catch (trendErr) {
+          if (!mounted) return;
+          setTrendError("Trend data is temporarily unavailable.");
+        }
 
         setStatus("ready");
+        setStatusLine("");
       } catch (e) {
         if (!mounted) return;
         setError(String(e?.message || e));
         setStatus("error");
+        setStatusLine("");
       }
     }
 
@@ -71,7 +96,53 @@ export default function PlacePage() {
       <div style={{ maxWidth: 980, margin: "0 auto", padding: "24px 16px" }}>
         <h1>{placeName} crime statistics</h1>
 
-        {status === "loading" && <p>Loading...</p>}
+        {status === "loading" && (
+          <>
+            {statusLine && <p className="statusLine">{statusLine}</p>}
+            <div className="skeletonGrid">
+              {Array.from({ length: 4 }).map((_, idx) => (
+                <div className="skeleton skeletonCard" key={`card-${idx}`} />
+              ))}
+            </div>
+            <div style={{ marginTop: 16 }}>
+              <div className="skeleton skeletonLine" style={{ width: "40%" }} />
+              <div className="skeleton skeletonLine" style={{ width: "100%", height: 160, borderRadius: 12 }} />
+            </div>
+            <div style={{ marginTop: 22 }}>
+              <div className="skeleton skeletonLine" style={{ width: "35%" }} />
+              <div className="tableWrap">
+                <table className="skeletonTable">
+                  <thead>
+                    <tr>
+                      <th>Category</th>
+                      <th>Street</th>
+                      <th>Month</th>
+                      <th>Outcome</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {Array.from({ length: 6 }).map((_, idx) => (
+                      <tr key={`row-${idx}`}>
+                        <td>
+                          <div className="skeleton skeletonCell" />
+                        </td>
+                        <td>
+                          <div className="skeleton skeletonCell" />
+                        </td>
+                        <td>
+                          <div className="skeleton skeletonCell" />
+                        </td>
+                        <td>
+                          <div className="skeleton skeletonCell" />
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </>
+        )}
         {status === "error" && (
           <p style={{ color: "crimson" }}>
             {error || "Something went wrong loading this report."}
@@ -85,6 +156,103 @@ export default function PlacePage() {
                 Resolved to: <b>{resolved.lat.toFixed(6)}</b>, <b>{resolved.lng.toFixed(6)}</b>
               </p>
             )}
+
+            {(() => {
+              const safety = computeSafetyScore(latestCrimes, trend?.rows || []);
+              const trendSummary = summarizeTrend(trend?.rows || []);
+              const topCats = getTopCategories(latestCrimes, 3);
+              const deltas = getCategoryDeltas(trend?.rows || []);
+              const deltaMap = new Map(deltas.map((d) => [d.category, d.delta]));
+              const drivers = getTopDrivers(trend?.rows || [], 3);
+              return (
+                <>
+                  <div className="summaryBar">
+                    <div className="summaryCard">
+                      <div className="summaryLabel">Safety Score</div>
+                      <div className="summaryValue">
+                        {safety.score !== null ? safety.score : "—"}
+                      </div>
+                      <div className="summaryMeta">
+                        {safety.label}
+                      </div>
+                    </div>
+                    <div className="summaryCard">
+                      <div className="summaryLabel">Trend</div>
+                      <div className="summaryValue">{trendSummary.direction}</div>
+                      <div className="summaryMeta">
+                        {trendSummary.changePct !== null
+                          ? `${trendSummary.changePct > 0 ? "+" : ""}${trendSummary.changePct.toFixed(
+                              1
+                            )}% (last 3 vs prior 3)`
+                          : "Not enough data yet"}
+                      </div>
+                    </div>
+                    <div className="summaryCard">
+                      <div className="summaryLabel">Benchmarks</div>
+                      <div className="summaryValue">City compare</div>
+                      <div className="summaryMeta">Coming soon</div>
+                    </div>
+                    <div className="summaryCard">
+                      <div className="summaryLabel">Risk</div>
+                      <div className="summaryValue">
+                        <span className="summaryBadge">Flood risk</span>
+                      </div>
+                      <div className="summaryMeta">Data integration in progress</div>
+                    </div>
+                    <div className="summaryCard">
+                      <div className="summaryLabel">Property</div>
+                      <div className="summaryValue">Avg price</div>
+                      <div className="summaryMeta">Pending Land Registry data</div>
+                    </div>
+                  </div>
+
+                  <details className="summaryExplain">
+                    <summary>How we calculate the safety score</summary>
+                    <p>
+                      We apply category weights (e.g. violent crime &gt; theft &gt; anti-social behaviour),
+                      then adjust for recent trend direction and volatility. Higher weighted incident volume,
+                      rising trends, and spiky months reduce the score. This is a transparent indicator, not a
+                      definitive safety rating.
+                    </p>
+                  </details>
+
+                  {topCats.length > 0 && (
+                    <div className="impactGrid">
+                      {topCats.map((cat) => {
+                        const delta = deltaMap.get(cat.category) || 0;
+                        return (
+                          <button
+                            type="button"
+                            className="impactCard"
+                            key={cat.category}
+                            onClick={() => setCategoryFilter(cat.category)}
+                          >
+                            <div className="summaryLabel">Category impact</div>
+                            <div className="summaryValue">{cat.category.replace(/-/g, " ")}</div>
+                            <div className="impactMeta">
+                              {cat.share}% share •{" "}
+                              {delta === 0 ? "No change" : `${delta > 0 ? "+" : ""}${delta} MoM`}
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {drivers.length > 0 && (
+                    <div className="summaryExplain">
+                      Drivers of change:{" "}
+                      {drivers.map((d) => (
+                        <span key={d.category} style={{ marginRight: 8 }}>
+                          {d.category.replace(/-/g, " ")} ({d.delta > 0 ? "+" : ""}
+                          {d.delta})
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </>
+              );
+            })()}
 
             {/* SEO copy + user trust */}
             <p style={{ maxWidth: 760, lineHeight: 1.6, opacity: 0.9 }}>
@@ -100,38 +268,37 @@ export default function PlacePage() {
 
             <div style={{ marginTop: 16 }}>
               <h2>12-month trend</h2>
-              {trend ? <TrendChart rows={trend.rows} /> : <p>No trend data.</p>}
+              {trendError && <p className="error">{trendError}</p>}
+              {trend ? <TrendChart rows={trend.rows} /> : !trendError && <p>No trend data.</p>}
+              {trend && (
+                <p className="note">
+                  {trendTakeaway(summarizeTrend(trend.rows), getTopDrivers(trend.rows, 2))}
+                </p>
+              )}
             </div>
+
+            <MapAnalyticsPanel
+              crimes={latestCrimes}
+              center={resolved ? { lat: resolved.lat, lon: resolved.lng } : null}
+              selectedCategory={categoryFilter}
+              onCategoryChange={setCategoryFilter}
+            />
 
             <div style={{ marginTop: 22 }}>
               <h2>Latest crimes</h2>
-              <p style={{ opacity: 0.75 }}>Showing first 100 records for the latest available month.</p>
+              <p style={{ opacity: 0.75 }}>
+                Use the filters to compare categories and focus on specific streets or outcomes.
+              </p>
 
+              {crimesError && <p className="error">{crimesError}</p>}
               {latestCrimes.length > 0 ? (
-                <div className="tableWrap">
-                  <table>
-                    <thead>
-                      <tr>
-                        <th>Category</th>
-                        <th>Street</th>
-                        <th>Month</th>
-                        <th>Outcome</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {latestCrimes.slice(0, 100).map((crime) => (
-                        <tr key={crime.id}>
-                          <td>{crime.category}</td>
-                          <td>{crime.location?.name || "Unknown"}</td>
-                          <td>{crime.date || "Unknown"}</td>
-                          <td>{crime.outcome || "None recorded"}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                <CrimeTable
+                  crimes={latestCrimes}
+                  selectedCategory={categoryFilter}
+                  onCategoryChange={setCategoryFilter}
+                />
               ) : (
-                <p>No crimes returned for the latest available month.</p>
+                !crimesError && <p>No crimes returned for the latest available month.</p>
               )}
 
             </div>

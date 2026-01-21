@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import "../App.css";
 import { setMeta } from "../seo";
 import { classifyQueryType, geocodeLocation, fetchCrimesForLocation } from "../services/existing";
+import MapAnalyticsPanel from "../components/MapAnalyticsPanel";
+import CrimeTable from "../components/CrimeTable";
 
 export default function HomeRoute() {
   const navigate = useNavigate();
@@ -13,6 +15,8 @@ export default function HomeRoute() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [resolved, setResolved] = useState(null);
+  const [statusLine, setStatusLine] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("all");
 
   // simple throttle for geocoding calls (helps avoid rapid repeat clicks)
   const lastGeoMs = useRef(0);
@@ -30,6 +34,8 @@ export default function HomeRoute() {
     setResolved(null);
     setLoading(true);
     setData([]);
+    setStatusLine("Resolving location...");
+    setCategoryFilter("all");
 
     const d = date.trim();
     if (d && !/^\d{4}-\d{2}$/.test(d)) {
@@ -48,11 +54,14 @@ export default function HomeRoute() {
       const { lat, lng, source } = await geocodeLocation(location);
       setResolved({ lat, lng, source });
 
+      setStatusLine("Fetching latest crimes...");
       const crimes = await fetchCrimesForLocation(lat, lng, d);
       setData(Array.isArray(crimes) ? crimes : []);
+      setStatusLine("Analyzing results...");
     } catch (e) {
       setError(e.message || "Something went wrong.");
     } finally {
+      setStatusLine("");
       setLoading(false);
     }
   }
@@ -127,29 +136,57 @@ export default function HomeRoute() {
         </div>
       )}
 
-      {data.length > 0 && (
-        <div className="tableWrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Category</th>
-                <th>Street</th>
-                <th>Month</th>
-                <th>Outcome</th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.slice(0, 100).map((crime) => (
-                <tr key={crime.id}>
-                  <td>{crime.category}</td>
-                  <td>{crime.location?.name || "Unknown"}</td>
-                  <td>{crime.date || "Unknown"}</td>
-                  <td>{crime.outcome || "None recorded"}</td>
+      {loading && (
+        <>
+          {statusLine && <p className="statusLine">{statusLine}</p>}
+          <div className="tableWrap">
+            <table className="skeletonTable">
+              <thead>
+                <tr>
+                  <th>Category</th>
+                  <th>Street</th>
+                  <th>Month</th>
+                  <th>Outcome</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {Array.from({ length: 6 }).map((_, idx) => (
+                  <tr key={`s-${idx}`}>
+                    <td>
+                      <div className="skeleton skeletonCell" />
+                    </td>
+                    <td>
+                      <div className="skeleton skeletonCell" />
+                    </td>
+                    <td>
+                      <div className="skeleton skeletonCell" />
+                    </td>
+                    <td>
+                      <div className="skeleton skeletonCell" />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
+
+      {data.length > 0 && !loading && resolved && (
+        <MapAnalyticsPanel
+          crimes={data}
+          center={{ lat: resolved.lat, lon: resolved.lng }}
+          selectedCategory={categoryFilter}
+          onCategoryChange={setCategoryFilter}
+        />
+      )}
+
+      {data.length > 0 && !loading && (
+        <CrimeTable
+          crimes={data}
+          selectedCategory={categoryFilter}
+          onCategoryChange={setCategoryFilter}
+        />
       )}
 
       <p className="note footerLinks">

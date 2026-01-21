@@ -117,7 +117,10 @@ module.exports = async (req, res) => {
   try {
     const cacheKey = `resolve:${q.toLowerCase()}`;
     const cached = getCache(cacheKey);
-    if (cached) return res.json(cached);
+    if (cached) {
+      res.setHeader("Cache-Control", "public, s-maxage=86400, stale-while-revalidate=172800");
+      return res.json(cached);
+    }
 
     if (isLikelyLatLngPair(q)) {
       const [a, b] = q.split(",").map((s) => s.trim());
@@ -125,6 +128,7 @@ module.exports = async (req, res) => {
       const lon = parseCoordinateToken(b, "lon");
       const payload = { lat, lon, source: "manual" };
       setCache(cacheKey, payload, CACHE_TTL_MS);
+      res.setHeader("Cache-Control", "public, s-maxage=86400, stale-while-revalidate=172800");
       return res.json(payload);
     }
 
@@ -144,6 +148,7 @@ module.exports = async (req, res) => {
         region: json.result.region,
       };
       setCache(cacheKey, payload, CACHE_TTL_MS);
+      res.setHeader("Cache-Control", "public, s-maxage=86400, stale-while-revalidate=172800");
       return res.json(payload);
     }
 
@@ -164,6 +169,7 @@ module.exports = async (req, res) => {
     }
     const payload = { lat, lon, source: "place", name: first.display_name || q };
     setCache(cacheKey, payload, CACHE_TTL_MS);
+    res.setHeader("Cache-Control", "public, s-maxage=86400, stale-while-revalidate=172800");
     return res.json(payload);
   } catch (err) {
     const status = err.status || 500;

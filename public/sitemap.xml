@@ -29,6 +29,18 @@
     <loc>https://crime-safety-dashboard.vercel.app/areas/bristol</loc>
   </url>
   <url>
+    <loc>https://crime-safety-dashboard.vercel.app/city</loc>
+  </url>
+  <url>
+    <loc>https://crime-safety-dashboard.vercel.app/city/london</loc>
+  </url>
+  <url>
+    <loc>https://crime-safety-dashboard.vercel.app/city/manchester</loc>
+  </url>
+  <url>
+    <loc>https://crime-safety-dashboard.vercel.app/city/bristol</loc>
+  </url>
+  <url>
     <loc>https://crime-safety-dashboard.vercel.app/about</loc>
   </url>
   <url>

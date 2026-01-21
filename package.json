@@ -5,8 +5,13 @@
   "description": "React rich web application: Crime & Safety Dashboard using UK Police Data API with postcode/place geocoding.",
   "proxy": "http://localhost:3001",
   "dependencies": {
+    "typescript": "^4.9.5",
+    "@iconify/icons-lucide": "^1.2.135",
+    "@iconify/react": "^6.0.2",
+    "leaflet": "^1.9.4",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
+    "react-leaflet": "^4.2.1",
     "react-router-dom": "^7.12.0",
     "react-scripts": "^5.0.1"
   },

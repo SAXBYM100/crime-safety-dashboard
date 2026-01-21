@@ -13,18 +13,23 @@ export default function GuideMovingHome() {
 
   return (
     <div className="contentWrap">
-      <h1>Moving to a new area</h1>
-      <p>
-        Moving to a new area comes with a long list of questions: commuting time, local schools, amenities, rent, and
-        of course safety. Crime data can help you build a clearer picture, but it should not be used in isolation. This
-        guide outlines a balanced approach that combines data, local context, and practical observation so you can make
-        decisions with confidence.
-      </p>
-      <p>
-        The dashboard is designed to make this process easier. You can compare nearby postcodes, look at 12-month
-        trends, and focus on the categories that matter most for your daily routine. The goal is to understand patterns
-        rather than to hunt for a perfect number.
-      </p>
+      <div className="guideHero">
+        <div>
+          <h1>Moving to a new area</h1>
+          <p>
+            Moving to a new area comes with a long list of questions: commuting time, local schools, amenities, rent, and
+            of course safety. Crime data can help you build a clearer picture, but it should not be used in isolation. This
+            guide outlines a balanced approach that combines data, local context, and practical observation so you can make
+            decisions with confidence.
+          </p>
+          <p>
+            The dashboard is designed to make this process easier. You can compare nearby postcodes, look at 12-month
+            trends, and focus on the categories that matter most for your daily routine. The goal is to understand patterns
+            rather than to hunt for a perfect number.
+          </p>
+        </div>
+        <img src={`${process.env.PUBLIC_URL}/visuals/guide-abstract.svg`} alt="Abstract guide illustration" />
+      </div>
 
       <h2>Start with your priorities</h2>
       <p>

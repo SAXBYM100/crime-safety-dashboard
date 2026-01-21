@@ -30,14 +30,19 @@ const server = http.createServer(async (req, res) => {
 
     req.query = Object.fromEntries(url.searchParams.entries());
 
+    const pendingHeaders = new Map();
     const wrapped = {
       statusCode: 200,
-      setHeader: (key, value) => res.setHeader(key, value),
+      setHeader: (key, value) => {
+        pendingHeaders.set(key, value);
+        res.setHeader(key, value);
+      },
       status(code) {
         res.statusCode = code;
         return this;
       },
       json(payload) {
+        pendingHeaders.forEach((value, key) => res.setHeader(key, value));
         sendJson(res, res.statusCode || 200, payload);
       },
     };
