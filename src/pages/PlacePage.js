@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { setMeta } from "../seo";
 import TrendChart from "../components/TrendChart";
 import { computeSafetyScore, summarizeTrend, getTopCategories } from "../analytics/safetyScore";
@@ -149,6 +149,11 @@ export default function PlacePage() {
                 {sourcesSummary.sourcesText}
               </p>
             )}
+            <div style={{ marginBottom: 16 }}>
+              <Link to={`/report?kind=place&q=${encodeURIComponent(placeName)}`} className="primaryButton">
+                Download Area Report
+              </Link>
+            </div>
 
             {(() => {
               const safety = computeSafetyScore(latestCrimes, trend?.rows || []);

@@ -851,6 +851,127 @@ th {
   color: var(--muted);
 }
 
+.reportPage {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.reportActions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.reportLink {
+  color: var(--blue);
+  text-decoration: none;
+}
+
+.reportCard {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 24px;
+  box-shadow: 0 14px 32px rgba(15, 23, 42, 0.12);
+}
+
+.reportHeader {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+
+.reportLogo {
+  width: 48px;
+  height: 48px;
+}
+
+.reportKicker {
+  margin: 0 0 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+.reportMeta {
+  margin: 6px 0 0;
+  color: var(--muted);
+}
+
+.reportHero {
+  margin: 18px 0;
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+
+.reportHero img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.reportGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.reportSection {
+  background: var(--cloud);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 14px 16px;
+}
+
+.reportSection h2 {
+  margin: 0 0 8px;
+  font-size: 1.1rem;
+}
+
+.reportValue {
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.reportMuted {
+  color: var(--muted);
+}
+
+.reportList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 6px;
+  color: var(--muted);
+}
+
+@media print {
+  body {
+    background: #fff;
+  }
+  .siteHeader,
+  .footer,
+  .reportActions,
+  .navScrim {
+    display: none;
+  }
+  .contentWrap {
+    padding: 0;
+  }
+  .reportCard {
+    border: none;
+    box-shadow: none;
+    padding: 0;
+  }
+}
+
 .skeleton {
   position: relative;
   overflow: hidden;

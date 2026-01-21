@@ -1,5 +1,5 @@
 import React, { useMemo, useRef, useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import "../App.css";
 import { setMeta } from "../seo";
 import { classifyQueryType } from "../services/existing";
@@ -100,6 +100,15 @@ export default function HomeRoute() {
 
     setError("Dedicated pages currently support postcodes and place names (not lat,lng). Use a postcode or place name.");
   }
+
+  const reportLink = useMemo(() => {
+    const raw = (location || "").trim();
+    if (!raw) return "";
+    const kind = classifyQueryType(raw).kind;
+    const queryKind = kind === "latlng" ? "latlng" : kind === "postcode" ? "postcode" : "place";
+    return `/report?kind=${encodeURIComponent(queryKind)}&q=${encodeURIComponent(raw)}`;
+  }, [location]);
+
   return (
     <div className="App">
       <header className="hero">
@@ -149,6 +158,14 @@ export default function HomeRoute() {
           Last updated: {sourcesSummary.lastUpdated ? new Date(sourcesSummary.lastUpdated).toLocaleDateString() : "Pending"} • Sources:{" "}
           {sourcesSummary.sourcesText}
         </p>
+      )}
+
+      {resolved && reportLink && !loading && !error && (
+        <div style={{ marginBottom: 16 }}>
+          <Link to={reportLink} className="primaryButton">
+            Download Area Report
+          </Link>
+        </div>
       )}
 
       {error && (
