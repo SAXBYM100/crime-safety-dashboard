@@ -133,23 +133,23 @@ export default function HomePage() {
       </section>
 
       <div className="contentWrap homeMain">
-                <h2>Purpose</h2>
+        <h2>Purpose</h2>
         <p>
           Area IQ helps you understand UK crime data with context, not headlines. We turn public police records into
           clear, comparable signals so you can make informed decisions about where to live, rent, invest, or travel
-          — without hype or hidden scoring.
+          - without hype or hidden scoring.
         </p>
         <p>
-          For full transparency, explore our{' '}
-          <Link to="/guides/how-uk-crime-data-works">methodology</Link> and{' '}
+          For full transparency, explore our{" "}
+          <Link to="/guides/how-uk-crime-data-works">methodology</Link> and{" "}
           <Link to="/about">data sources</Link>.
         </p>
 
         <h2>Why Area IQ</h2>
         <ul className="bulletList">
-          <li>12-month crime trends, not single-month snapshots — see how areas change over time.</li>
-          <li>Explainable signals — no black-box safety scores or hidden weighting.</li>
-          <li>Designed for real decisions — home buyers, renters, families, and travelers.</li>
+          <li>12-month crime trends, not single-month snapshots - see how areas change over time.</li>
+          <li>Explainable signals - no black-box safety scores or hidden weighting.</li>
+          <li>Designed for real decisions - home buyers, renters, families, and travelers.</li>
         </ul>
 
         <div className="ctaGrid">
@@ -159,13 +159,14 @@ export default function HomePage() {
           >
             <h3 className="ctaTitle">
               <Icon icon={mapPin} />
-              Launch the dashboard
+              Start Exploring
             </h3>
             <p>
-              Search by postcode, place name, or coordinates and get a focused snapshot of incidents and category trends.
+              Search by UK postcode, place name, or coordinates to view recent incidents, category trends, and reporting
+              patterns in a specific area.
             </p>
             <Link className="primaryButton" to="/app">
-              Open the dashboard
+              Open Area IQ
             </Link>
           </div>
           <div
@@ -174,13 +175,14 @@ export default function HomePage() {
           >
             <h3 className="ctaTitle">
               <Icon icon={bookOpen} />
-              Read the guides
+              Understanding the Signals
             </h3>
             <p>
-              Learn how UK crime data is collected, which categories matter, and how to compare areas responsibly.
+              Learn how UK police crime data is collected, how categories are defined, and how to compare neighborhoods
+              responsibly.
             </p>
             <Link className="primaryButton" to="/guides">
-              Explore the guides
+              View the guides
             </Link>
           </div>
           <div
@@ -189,118 +191,104 @@ export default function HomePage() {
           >
             <h3 className="ctaTitle">
               <Icon icon={building2} />
-              Browse city hubs
+              City Intelligence
             </h3>
             <p>
-              City pages combine reporting context, livability signals, and links to postcode-level reports.
+              Explore UK city crime reports that combine regional context, livability signals, and direct links to
+              postcode-level data.
             </p>
             <Link className="primaryButton" to="/city">
-              View city hubs
+              Browse cities
             </Link>
           </div>
         </div>
 
         <div className="sectionDivider" />
 
-        <h2>What the tool does</h2>
+        <h2>How It Works</h2>
         <p>
-          The dashboard lets you enter a UK postcode, a town or city name, or a latitude and longitude pair. It then
-          pulls the latest available crime records near that location and summarizes them by category and month. The
-          results are intentionally direct: you can see what types of offences are most common, where they were reported,
-          and how the pattern has shifted across the last year. The tool does not rank neighborhoods or label them as
-          safe or unsafe. Instead, it provides a transparent view of what has been reported so you can make your own
-          judgment.
+          Enter a UK postcode, town, city, or latitude and longitude. Area IQ pulls the latest available crime records
+          near that location and summarizes them by offence category and month.
+        </p>
+        <p>You can quickly see:</p>
+        <ul className="bulletList">
+          <li>Which types of crime are most commonly reported.</li>
+          <li>Where incidents tend to cluster.</li>
+          <li>How patterns have changed over the last 12 months.</li>
+        </ul>
+        <p>
+          Area IQ does not rank neighborhoods or label places as "safe" or "unsafe." Instead, it provides transparent
+          access to reported police data, so you can make your own judgment based on clear, comparable information.
         </p>
         <p>
-          The dashboard is best used as a starting point. If you are researching a place to live, the data can tell you
-          which categories show up most often, whether reports are clustered around transport corridors, and whether
-          recent months look stable or volatile. If you are planning a trip, the data can help you identify which times
-          of year tend to see higher reporting levels in certain categories. These are context signals, not absolute
-          answers, and they work best alongside local knowledge and practical safety habits.
+          If you are researching a place to live, use the dashboard to identify consistent trends, transport-area
+          clusters, and stability over time. If you are planning a visit, look for seasonal patterns in reporting levels
+          across different categories.
+        </p>
+        <p>
+          These are context signals, not predictions - and work best alongside local knowledge and practical safety
+          planning.
         </p>
 
         <AdSlot slot="1000000001" contentReady />
 
-        <h2>How UK crime data works</h2>
+        <h2>Where the Data Comes From</h2>
         <p>
-          Official UK crime data is published by police forces and aggregated on data.police.uk. The data is released
-          monthly and grouped into categories such as anti-social behaviour, vehicle crime, burglary, and violence and
-          sexual offences. Each record is an incident that has been reported and recorded by a police force, with a
-          location that is intentionally generalized to protect privacy. That means the pin on a map is a best
-          approximation, not an exact address.
+          Official UK crime statistics are published by individual police forces and aggregated on data.police.uk. Data
+          is released monthly and grouped into categories such as:
+        </p>
+        <ul className="bulletList">
+          <li>Anti-social behaviour</li>
+          <li>Vehicle crime</li>
+          <li>Burglary</li>
+          <li>Violence and sexual offences</li>
+        </ul>
+        <p>
+          Each record represents a reported incident with a generalized map location. Pins show an approximate area
+          rather than an exact address to protect privacy.
         </p>
         <p>
-          Because the data is published monthly, you should expect a delay. A crime that happens in late March might not
-          appear in the data until May. Outcomes can take even longer. Some categories are influenced by reporting
-          patterns, such as seasonal spikes in anti-social behaviour during school holidays. This is why the dashboard
-          emphasizes a 12-month trend rather than a single month snapshot.
-        </p>
-
-        <h2>How to use the dashboard</h2>
-        <p>
-          Start with a precise query. A full postcode will return the most consistent results because the geocoding is
-          unambiguous. If you search by town or city, the dashboard will choose a central coordinate for that place,
-          which can be useful for a high-level overview but less precise for neighborhood research. For the best results,
-          use a specific postcode and then explore how categories change across the last year.
+          Because updates are monthly, delays are normal. An incident reported in late March may not appear in
+          published data until May. Some case outcomes are updated later as investigations progress.
         </p>
         <p>
-          When reviewing the table, focus on patterns rather than individual rows. An outcome of "under investigation"
-          does not necessarily mean the case was unresolved, and some outcomes are updated after the initial record is
-          published. The trend chart is a good way to see whether reports are growing, declining, or stable. If you want
-          more detail, open the dedicated report pages and compare a few nearby postcodes rather than relying on a single
-          point.
+          Certain categories show seasonal reporting patterns - for example, higher anti-social behaviour reports
+          during school holidays. This is why Area IQ emphasizes 12-month area trends instead of single-month views.
         </p>
 
-        <h2>Understanding categories and limitations</h2>
+        <h2>Using the Dashboard</h2>
         <p>
-          Categories are broad by design. For example, "violent crime" includes a range of incidents from minor assaults
-          to more serious offences. "Other theft" can include shoplifting, bicycle theft, and theft from the person.
-          Treat the categories as directional signals rather than precise risk scores. The presence of a category does
-          not mean that every street is affected equally or that the situation is deteriorating.
+          For the most accurate results, search using a full UK postcode. This provides a precise location and more
+          consistent comparisons. Town and city searches use a central reference point, which is useful for regional
+          overviews but less precise for street-level analysis.
+        </p>
+        <p>When reviewing results:</p>
+        <ul className="bulletList">
+          <li>Focus on patterns, not individual records.</li>
+          <li>Use the trend chart to spot increases, decreases, or stability.</li>
+          <li>Compare nearby postcodes rather than relying on a single location.</li>
+        </ul>
+        <p>
+          Outcome statuses such as "under investigation" may change over time as records are updated.
+        </p>
+
+        <h2>Limits &amp; Context</h2>
+        <p>Crime categories are broad by design. For example:</p>
+        <ul className="bulletList">
+          <li>Violence and sexual offences includes incidents ranging from minor assaults to serious crimes.</li>
+          <li>Other theft can include shoplifting, bicycle theft, and theft from the person.</li>
+        </ul>
+        <p>
+          Treat these as directional indicators, not risk scores. The presence of a category does not mean every street
+          is affected equally.
         </p>
         <p>
-          There are also reporting limitations. Not every crime is reported, and reporting rates vary by location and by
-          the type of offence. Some police forces publish more complete data than others, and that can affect comparisons
-          across regions. The dashboard does not adjust the data or apply weighting. That transparency is intentional:
-          you are seeing the data as it is published, without hidden assumptions.
+          Not all crime is reported, and reporting rates vary by location and offence type. Some police forces publish
+          more complete data than others. Area IQ does not modify or weight the source data - what you see reflects the
+          official records, without added assumptions.
         </p>
 
         <AdSlot slot="1000000002" contentReady />
-
-        <h2>Safety resources and next steps</h2>
-        <p>
-          Data is only one input to personal safety. If you are moving to a new area, consider visiting at different
-          times of day, checking local council updates, and speaking with residents. For night-time safety, plan routes
-          in advance, use well-lit main roads, and keep your phone charged. For travelers, review local transport
-          guidance and emergency contact numbers ahead of time. The dashboard is meant to complement these practical
-          steps, not replace them.
-        </p>
-        <p>
-          If you want deeper guidance, explore the guides below. Each guide pairs data interpretation with practical
-          advice that can be applied immediately. You can also jump straight into the dashboard if you already have a
-          location in mind.
-        </p>
-
-        <ul className="pillList">
-          <li>
-            <Link to="/guides/how-uk-crime-data-works">How UK crime data works</Link>
-          </li>
-          <li>
-            <Link to="/guides/staying-safe-at-night">Staying safe at night</Link>
-          </li>
-          <li>
-            <Link to="/guides/moving-to-a-new-area">Moving to a new area</Link>
-          </li>
-          <li>
-            <Link to="/areas/london">London area page</Link>
-          </li>
-          <li>
-            <Link to="/city/london">London city hub</Link>
-          </li>
-          <li>
-            <Link to="/areas/manchester">Manchester area page</Link>
-          </li>
-        </ul>
       </div>
     </>
   );
