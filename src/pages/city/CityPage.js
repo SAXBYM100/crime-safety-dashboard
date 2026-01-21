@@ -2,6 +2,7 @@ import React, { useEffect, useMemo } from "react";
 import { Link, useParams } from "react-router-dom";
 import { setMeta } from "../../seo";
 import AdSlot from "../../components/AdSlot";
+import PageHeaderImage from "../../components/PageHeaderImage";
 
 const CITY_CONTENT = {
   london: {
@@ -33,6 +34,22 @@ const CITY_CONTENT = {
   },
 };
 
+const CITY_IMAGES = {
+  manchester: {
+    src: `${process.env.PUBLIC_URL}/images/cities/manchester.jpeg`,
+    alt: "Aerial view of Manchester city centre skyline",
+  },
+  birmingham: {
+    src: `${process.env.PUBLIC_URL}/images/cities/birmingham.jpeg`,
+    alt: "Birmingham city centre skyline and surrounding districts",
+  },
+};
+
+const CITY_FALLBACK = {
+  src: `${process.env.PUBLIC_URL}/images/hero/uk-map.jpeg`,
+  alt: "UK map overview for city context",
+};
+
 function getCity(slug) {
   const key = String(slug || "").toLowerCase();
   return CITY_CONTENT[key] || null;
@@ -41,6 +58,8 @@ function getCity(slug) {
 export default function CityPage() {
   const { citySlug } = useParams();
   const city = useMemo(() => getCity(citySlug), [citySlug]);
+  const imageKey = String(citySlug || "").toLowerCase();
+  const heroImage = CITY_IMAGES[imageKey] || CITY_FALLBACK;
 
   useEffect(() => {
     if (city) {
@@ -66,7 +85,16 @@ export default function CityPage() {
   }
 
   return (
-    <div className="contentWrap">
+    <>
+      <PageHeaderImage
+        src={heroImage.src}
+        alt={heroImage.alt}
+        title={`${city.name} city hub`}
+        subtitle={city.overview}
+        variant="city"
+        className="pageHeaderFull"
+      />
+      <div className="contentWrap">
       <div className="cityBanner">
         <div>
           <h1>{city.name} city hub</h1>
@@ -117,6 +145,7 @@ export default function CityPage() {
           <Link to="/app">Open the dashboard</Link>
         </div>
       </div>
-    </div>
+      </div>
+    </>
   );
 }

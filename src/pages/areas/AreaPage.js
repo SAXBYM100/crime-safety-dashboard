@@ -2,6 +2,7 @@ import React, { useEffect, useMemo } from "react";
 import { Link, useParams } from "react-router-dom";
 import { setMeta } from "../../seo";
 import AdSlot from "../../components/AdSlot";
+import PageHeaderImage from "../../components/PageHeaderImage";
 
 const AREA_CONTENT = {
   london: {
@@ -79,6 +80,12 @@ export default function AreaPage() {
         </div>
         <img src={`${process.env.PUBLIC_URL}/visuals/city-banner.svg`} alt="Abstract city skyline illustration" />
       </div>
+
+      <PageHeaderImage
+        src={`${process.env.PUBLIC_URL}/images/areas/uk-street.jpeg`}
+        alt="UK residential street scene"
+        variant="area"
+      />
 
       <div className="iconGrid">
         <div className="iconCard">

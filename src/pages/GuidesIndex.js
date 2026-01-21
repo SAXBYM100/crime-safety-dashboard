@@ -2,6 +2,7 @@ import React, { useEffect } from "react";
 import { Link } from "react-router-dom";
 import { setMeta } from "../seo";
 import AdSlot from "../components/AdSlot";
+import ResponsiveImage from "../components/ResponsiveImage";
 
 export default function GuidesIndex() {
   useEffect(() => {
@@ -25,10 +26,11 @@ export default function GuidesIndex() {
             <span className="heroBadge">Decision-ready tips</span>
           </div>
         </div>
-        <img
+        <ResponsiveImage
           className="heroVisual"
-          src={`${process.env.PUBLIC_URL}/visuals/guide-abstract.svg`}
-          alt="Abstract guide illustration"
+          src={`${process.env.PUBLIC_URL}/images/hero/uk-map.jpeg`}
+          alt="UK map image showing national coverage"
+          aspectRatio="4/3"
         />
       </div>
 

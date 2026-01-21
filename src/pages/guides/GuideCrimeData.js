@@ -2,6 +2,7 @@ import React, { useEffect } from "react";
 import { Link } from "react-router-dom";
 import { setMeta } from "../../seo";
 import AdSlot from "../../components/AdSlot";
+import PageHeaderImage from "../../components/PageHeaderImage";
 
 export default function GuideCrimeData() {
   useEffect(() => {
@@ -13,24 +14,27 @@ export default function GuideCrimeData() {
 
   return (
     <div className="contentWrap">
-      <div className="guideHero">
-        <div>
-          <h1>How UK crime data works</h1>
-          <p>
-            Crime data is a public record, but it is not a perfect mirror of reality. The UK police data you see in the
-            dashboard is collected by police forces, published monthly, and then aggregated on data.police.uk. This means
-            every chart or table you view is a snapshot of what was reported and recorded, not a definitive statement of
-            everything that happened. Understanding that distinction is the first step to using crime data wisely.
-          </p>
-          <p>
-            The dashboard is designed to be transparent about those boundaries. It does not hide the source or smooth the
-            numbers. Instead, it surfaces them with plain explanations so you can decide how much weight to give a trend,
-            a category, or a specific month. This guide will help you read the data with nuance so you can make informed
-            decisions without overreacting to individual data points.
-          </p>
-        </div>
-        <img src={`${process.env.PUBLIC_URL}/visuals/guide-abstract.svg`} alt="Abstract guide illustration" />
-      </div>
+      <PageHeaderImage
+        src={`${process.env.PUBLIC_URL}/images/hero/uk-map.jpeg`}
+        alt="UK map visualization representing national crime data"
+        title="How UK crime data works"
+        subtitle="Understand reporting cycles, category definitions, and how to compare locations responsibly."
+        variant="guide"
+      />
+
+      <h1>How UK crime data works</h1>
+      <p>
+        Crime data is a public record, but it is not a perfect mirror of reality. The UK police data you see in the
+        dashboard is collected by police forces, published monthly, and then aggregated on data.police.uk. This means
+        every chart or table you view is a snapshot of what was reported and recorded, not a definitive statement of
+        everything that happened. Understanding that distinction is the first step to using crime data wisely.
+      </p>
+      <p>
+        The dashboard is designed to be transparent about those boundaries. It does not hide the source or smooth the
+        numbers. Instead, it surfaces them with plain explanations so you can decide how much weight to give a trend,
+        a category, or a specific month. This guide will help you read the data with nuance so you can make informed
+        decisions without overreacting to individual data points.
+      </p>
 
       <h2>Where the data comes from</h2>
       <p>
