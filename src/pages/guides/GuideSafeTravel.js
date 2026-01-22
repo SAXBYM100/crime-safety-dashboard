@@ -2,6 +2,7 @@ import React, { useEffect } from "react";
 import { Link } from "react-router-dom";
 import { setMeta } from "../../seo";
 import AdSlot from "../../components/AdSlot";
+import PageHeaderImage from "../../components/media/PageHeaderImage";
 
 export default function GuideSafeTravel() {
   useEffect(() => {
@@ -13,23 +14,25 @@ export default function GuideSafeTravel() {
 
   return (
     <div className="contentWrap">
-      <div className="guideHero">
-        <div>
-          <h1>Staying safe at night</h1>
-          <p>
-            Night-time travel can feel uncertain, especially in unfamiliar areas. Crime data can help you understand common
-            patterns, but the most valuable safety improvements come from practical habits. This guide combines data
-            interpretation with realistic steps you can take before and during a night out, a late commute, or a visit to a
-            new city.
-          </p>
-          <p>
-            The goal is not to avoid every risk, but to reduce avoidable ones. Small adjustments, such as choosing well-lit
-            routes or sharing your journey, can make a big difference. The dashboard is a supporting tool that helps you
-            identify where certain categories are concentrated so you can plan calmly and confidently.
-          </p>
-        </div>
-        <img src={`${process.env.PUBLIC_URL}/visuals/guide-abstract.svg`} alt="Abstract guide illustration" />
-      </div>
+      <PageHeaderImage
+        src="/images/areas/uk-street.jpg"
+        alt="UK residential street scene for guide context"
+        title="Staying safe at night"
+        subtitle="Practical guidance for night travel, commuting, and social plans."
+        variant="guide"
+      />
+
+      <p>
+        Night-time travel can feel uncertain, especially in unfamiliar areas. Crime data can help you understand common
+        patterns, but the most valuable safety improvements come from practical habits. This guide combines data
+        interpretation with realistic steps you can take before and during a night out, a late commute, or a visit to a
+        new city.
+      </p>
+      <p>
+        The goal is not to avoid every risk, but to reduce avoidable ones. Small adjustments, such as choosing well-lit
+        routes or sharing your journey, can make a big difference. The dashboard is a supporting tool that helps you
+        identify where certain categories are concentrated so you can plan calmly and confidently.
+      </p>
 
       <h2>Use data for context, not fear</h2>
       <p>

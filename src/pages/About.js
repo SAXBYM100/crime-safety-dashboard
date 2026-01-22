@@ -2,6 +2,7 @@ import React, { useEffect } from "react";
 import { Link } from "react-router-dom";
 import { setMeta } from "../seo";
 import AdSlot from "../components/AdSlot";
+import PageHeaderImage from "../components/media/PageHeaderImage";
 
 export default function About() {
   useEffect(() => {
@@ -13,6 +14,11 @@ export default function About() {
 
   return (
     <div className="contentWrap">
+      <PageHeaderImage
+        src="/images/hero/uk-map.jpg"
+        alt="UK map image representing national coverage"
+        variant="guide"
+      />
       <h1>About Crime &amp; Safety Dashboard</h1>
       <p>
         Crime &amp; Safety Dashboard is a public-interest project that helps people understand UK crime data without

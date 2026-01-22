@@ -51,13 +51,6 @@ export default function HomePage() {
   return (
     <>
       <section className="homeHero">
-        <img
-          className="homeHeroBg"
-          src={`${process.env.PUBLIC_URL}/visuals/home-hero.jpg`}
-          alt="Abstract UK cityscape texture"
-          loading="eager"
-          fetchpriority="high"
-        />
         <div className="homeHeroOverlay" />
         <div className="homeHeroContent">
           <div className="heroTextWrap">

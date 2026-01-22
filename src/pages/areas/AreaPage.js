@@ -2,6 +2,7 @@ import React, { useEffect, useMemo } from "react";
 import { Link, useParams } from "react-router-dom";
 import { setMeta } from "../../seo";
 import AdSlot from "../../components/AdSlot";
+import PageHeaderImage from "../../components/media/PageHeaderImage";
 
 const AREA_CONTENT = {
   london: {
@@ -67,17 +68,18 @@ export default function AreaPage() {
 
   return (
     <div className="contentWrap">
-      <div className="cityBanner">
-        <div>
-          <h1>{area.name} safety + property guide</h1>
-          <p>{area.overview}</p>
-          <div className="heroBadgeRow">
-            <span className="heroBadge">Data-led context</span>
-            <span className="heroBadge">Neighborhood insights</span>
-            <span className="heroBadge">Updated monthly</span>
-          </div>
-        </div>
-        <img src={`${process.env.PUBLIC_URL}/visuals/city-banner.svg`} alt="Abstract city skyline illustration" />
+      <PageHeaderImage
+        src="/images/areas/street.jpg"
+        alt="UK residential street scene"
+        title={`${area.name} safety + property guide`}
+        subtitle={area.overview}
+        variant="area"
+      />
+
+      <div className="heroBadgeRow">
+        <span className="heroBadge">Data-led context</span>
+        <span className="heroBadge">Neighborhood insights</span>
+        <span className="heroBadge">Updated monthly</span>
       </div>
 
       <div className="iconGrid">
