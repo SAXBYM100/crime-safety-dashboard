@@ -1,20 +1,21 @@
 @import url("leaflet/dist/leaflet.css");
 
 :root {
-  --ink: #1b2421;
-  --muted: #5a635f;
-  --accent: #246a63;
-  --accent-strong: #1f5a55;
+  --ink: #0f172a;
+  --muted: #334155;
+  --accent: #0f766e;
+  --accent-strong: #0f766e;
   --card: #ffffff;
-  --border: #e1e1e1;
-  --wash: #f4f1ea;
-  --surface: #faf7f0;
+  --border: #e2e8f0;
+  --wash: #f8fafc;
+  --surface: #ffffff;
+  --cloud: #f8fafc;
 }
 
 body {
   margin: 0;
   font-family: "Geist", "Inter", "Manrope", "Segoe UI", sans-serif;
-  background: radial-gradient(circle at 12% 15%, #f7f1e3 0%, #f3efe6 30%, #ece7dc 100%);
+  background: var(--cloud);
   color: var(--ink);
 }
 
@@ -25,7 +26,7 @@ h1, h2, h3 {
 }
 
 a {
-  color: var(--accent);
+  color: #2563eb;
 }
 code {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
