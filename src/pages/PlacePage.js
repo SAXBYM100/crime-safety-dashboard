@@ -1,15 +1,17 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { setMeta } from "../seo";
 import TrendChart from "../components/TrendChart";
 import { computeSafetyScore, summarizeTrend, getTopCategories } from "../analytics/safetyScore";
 import { getCategoryDeltas, getTopDrivers, trendTakeaway } from "../analytics/trendAnalysis";
 import MapAnalyticsPanel from "../components/MapAnalyticsPanel";
 import CrimeTable from "../components/CrimeTable";
+import SafetyGauge from "../components/SafetyGauge";
 import { getAreaProfile, getSourcesSummary } from "../data";
 
 export default function PlacePage() {
   const params = useParams();
+  const navigate = useNavigate();
 
   // Decode and de-slugify (supports old style /place/plymouth and /place/Plymouth)
   const placeName = useMemo(() => {
@@ -27,6 +29,7 @@ export default function PlacePage() {
   const [trend, setTrend] = useState(null);
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [sourcesSummary, setSourcesSummary] = useState({ lastUpdated: null, sourcesText: "" });
+  const [ambiguousCandidates, setAmbiguousCandidates] = useState([]);
 
   useEffect(() => {
     setMeta(
@@ -34,6 +37,13 @@ export default function PlacePage() {
       `Explore recent crime statistics in ${placeName}, including offence types, locations, outcomes, and a 12-month crime trend based on official UK police data.`
     );
   }, [placeName]);
+
+  function chooseCandidate(candidate) {
+    if (!candidate) return;
+    const slug = candidate.canonicalSlug || encodeURIComponent(candidate.query || candidate.displayName || "");
+    if (!slug) return;
+    navigate(`/place/${slug}`);
+  }
 
   useEffect(() => {
     let mounted = true;
@@ -46,6 +56,7 @@ export default function PlacePage() {
       setResolved(null);
       setLatestCrimes([]);
       setTrend(null);
+      setAmbiguousCandidates([]);
       setStatusLine("Resolving location...");
 
       try {
@@ -66,7 +77,12 @@ export default function PlacePage() {
         setStatusLine("");
       } catch (e) {
         if (!mounted) return;
-        setError(String(e?.message || e));
+        if (e?.code === "AMBIGUOUS" && Array.isArray(e.candidates)) {
+          setAmbiguousCandidates(e.candidates);
+          setError(e.message || "Multiple matches found. Please choose the intended place.");
+        } else {
+          setError(String(e?.message || e));
+        }
         setStatus("error");
         setStatusLine("");
       }
@@ -131,9 +147,27 @@ export default function PlacePage() {
           </>
         )}
         {status === "error" && (
-          <p style={{ color: "crimson" }}>
-            {error || "Something went wrong loading this report."}
-          </p>
+          <div>
+            <p style={{ color: "crimson" }}>
+              {error || "Something went wrong loading this report."}
+            </p>
+            {ambiguousCandidates.length > 0 && (
+              <div className="impactGrid impactGrid--drivers">
+                {ambiguousCandidates.map((candidate) => (
+                  <button
+                    key={`${candidate.displayName}-${candidate.lat}-${candidate.lon}`}
+                    type="button"
+                    className="impactCard"
+                    onClick={() => chooseCandidate(candidate)}
+                  >
+                    <div className="summaryLabel">Did you mean</div>
+                    <div className="summaryValue">{candidate.displayName}</div>
+                    <div className="impactMeta">{candidate.adminArea || "UK"}</div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         )}
 
         {status === "ready" && (
@@ -166,12 +200,16 @@ export default function PlacePage() {
                 <>
                   <div className="summaryBar">
                     <div className="summaryCard">
-                      <div className="summaryLabel">Safety Score</div>
-                      <div className="summaryValue">
-                        {safety.score !== null ? safety.score : "—"}
-                      </div>
-                      <div className="summaryMeta">
-                        {safety.label}
+                      <div className="scoreCardRow">
+                        <div>
+                          <div className="summaryLabel">Composite Safety Index</div>
+                          <div className="summaryValue">
+                            {safety.score !== null ? safety.score : "—"}
+                          </div>
+                          <div className="summaryMeta">out of 100</div>
+                          <div className="summaryMeta">{safety.label}</div>
+                        </div>
+                        <SafetyGauge score={safety.score} label={safety.label} />
                       </div>
                     </div>
                     <div className="summaryCard">
@@ -306,4 +344,3 @@ export default function PlacePage() {
     </div>
   );
 }
-

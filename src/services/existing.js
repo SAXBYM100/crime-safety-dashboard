@@ -87,10 +87,27 @@ export async function geocodeLocation(query) {
 
   const url = `/api/resolve-location?q=${encodeURIComponent(q)}`;
   const json = await fetchJsonOrThrow(url);
+  if (json?.ambiguous) {
+    const err = new Error(json.message || "Multiple matches found. Please choose the intended place.");
+    err.code = "AMBIGUOUS";
+    err.candidates = Array.isArray(json.candidates) ? json.candidates : [];
+    if (process.env.NODE_ENV !== "production") {
+      console.log("[geocodeLocation] ambiguous", { query: q, candidates: err.candidates });
+    }
+    throw err;
+  }
   if (!json || typeof json.lat !== "number" || typeof json.lon !== "number") {
     throw new Error("Location lookup failed. Try a different query.");
   }
-  return { lat: json.lat, lng: json.lon, source: json.source || "lookup", name: json.name };
+  return {
+    lat: json.lat,
+    lng: json.lon,
+    source: json.source || "lookup",
+    name: json.name,
+    displayName: json.displayName || json.name,
+    adminArea: json.adminArea,
+    canonicalSlug: json.canonicalSlug,
+  };
 }
 
 export async function geocodePostcode(postcode) {

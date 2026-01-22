@@ -1673,6 +1673,41 @@ th {
   color: var(--muted);
 }
 
+.scoreCardRow {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.scoreCardGauge {
+  width: clamp(140px, 34vw, 220px);
+  flex: 0 0 auto;
+}
+
+.scoreCardGauge svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+@media (max-width: 900px) {
+  .scoreCardRow {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .scoreCardGauge {
+    align-self: center;
+  }
+}
+
+@media (max-width: 360px) {
+  .scoreCardGauge {
+    width: clamp(120px, 60vw, 200px);
+  }
+}
+
 .summaryBadge {
   display: inline-flex;
   align-items: center;

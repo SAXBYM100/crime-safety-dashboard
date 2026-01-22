@@ -7,6 +7,7 @@ import { computeSafetyScore, summarizeTrend, getTopCategories } from "../analyti
 import { getCategoryDeltas, getTopDrivers, trendTakeaway } from "../analytics/trendAnalysis";
 import MapAnalyticsPanel from "../components/MapAnalyticsPanel";
 import CrimeTable from "../components/CrimeTable";
+import SafetyGauge from "../components/SafetyGauge";
 import { getAreaProfile, getSourcesSummary } from "../data";
 
 export default function PostcodePage() {
@@ -158,11 +159,17 @@ export default function PostcodePage() {
                 <>
                   <div className="summaryBar">
                     <div className="summaryCard">
-                      <div className="summaryLabel">Safety Score</div>
-                      <div className="summaryValue">
-                        {safety.score !== null ? safety.score : "—"}
+                      <div className="scoreCardRow">
+                        <div>
+                          <div className="summaryLabel">Composite Safety Index</div>
+                          <div className="summaryValue">
+                            {safety.score !== null ? safety.score : "—"}
+                          </div>
+                          <div className="summaryMeta">out of 100</div>
+                          <div className="summaryMeta">{safety.label}</div>
+                        </div>
+                        <SafetyGauge score={safety.score} label={safety.label} />
                       </div>
-                      <div className="summaryMeta">{safety.label}</div>
                     </div>
                     <div className="summaryCard">
                       <div className="summaryLabel">Trend</div>

@@ -3,6 +3,17 @@ const { getCache, setCache } = require("./_utils/cache");
 const { fetchWithRetry, logDevError } = require("../lib/serverHttp");
 
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
+const DEV_LOG = process.env.NODE_ENV !== "production";
+
+const SETTLEMENT_TYPES = new Set([
+  "city",
+  "town",
+  "village",
+  "hamlet",
+  "suburb",
+  "neighbourhood",
+  "locality",
+]);
 
 function isLikelyLatLngPair(text) {
   const raw = String(text || "").trim();
@@ -96,6 +107,62 @@ function sendError(res, status, code, message) {
   res.status(status).json({ error: { code, message } });
 }
 
+function slugify(text) {
+  return String(text || "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)+/g, "");
+}
+
+function normalizeName(text) {
+  return String(text || "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function pickAdminArea(address = {}) {
+  return (
+    address.county ||
+    address.state ||
+    address.region ||
+    address.state_district ||
+    address.country ||
+    "UK"
+  );
+}
+
+function buildCandidate(item) {
+  const address = item.address || {};
+  const namedetails = item.namedetails || {};
+  const name =
+    namedetails.name ||
+    address.city ||
+    address.town ||
+    address.village ||
+    address.hamlet ||
+    address.suburb ||
+    address.neighbourhood ||
+    (item.display_name ? item.display_name.split(",")[0] : "");
+  const adminArea = pickAdminArea(address);
+  const displayName = name && adminArea ? `${name}, ${adminArea}` : item.display_name || name;
+  const canonicalSlug = slugify(`${name}-${adminArea}`);
+  const query = displayName || item.display_name || name;
+  return {
+    name,
+    displayName,
+    adminArea,
+    canonicalSlug,
+    lat: Number(item.lat),
+    lon: Number(item.lon),
+    importance: Number(item.importance || 0),
+    type: item.type || "",
+    class: item.class || "",
+    query,
+  };
+}
+
 module.exports = async (req, res) => {
   if (req.method !== "GET") {
     res.setHeader("Allow", "GET");
@@ -146,6 +213,9 @@ module.exports = async (req, res) => {
         postcode: json.result.postcode,
         district: json.result.admin_district,
         region: json.result.region,
+        displayName: json.result.postcode,
+        adminArea: json.result.admin_district || json.result.region || "UK",
+        canonicalSlug: slugify(`${json.result.postcode}-${json.result.admin_district || json.result.region || "uk"}`),
       };
       setCache(cacheKey, payload, CACHE_TTL_MS);
       res.setHeader("Cache-Control", "public, s-maxage=86400, stale-while-revalidate=172800");
@@ -153,7 +223,7 @@ module.exports = async (req, res) => {
     }
 
     const encoded = encodeURIComponent(q);
-    const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&countrycodes=gb&viewbox=-8.6,60.9,1.8,49.8&bounded=1&q=${encoded}`;
+    const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&limit=5&addressdetails=1&namedetails=1&countrycodes=gb&viewbox=-8.6,60.9,1.8,49.8&bounded=1&q=${encoded}`;
     const results = await fetchJsonOrThrow(url, {
       "User-Agent": "crime-safety-dashboard/1.0 (https://crime-safety-dashboard.vercel.app)",
     });
@@ -161,13 +231,56 @@ module.exports = async (req, res) => {
     if (!Array.isArray(results) || results.length === 0) {
       return sendError(res, 404, "NOT_FOUND", "No matching place found.");
     }
-    const first = results[0];
-    const lat = Number(first.lat);
-    const lon = Number(first.lon);
-    if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
-      return sendError(res, 500, "BAD_GEOCODE", "Geocoder returned an invalid coordinate.");
+    const normalizedQuery = normalizeName(q);
+    const candidates = results
+      .map(buildCandidate)
+      .filter((item) => Number.isFinite(item.lat) && Number.isFinite(item.lon));
+
+    const scored = candidates
+      .map((item) => {
+        const nameMatch = normalizeName(item.name) === normalizedQuery;
+        const settlementBoost = SETTLEMENT_TYPES.has(item.type) ? 0.08 : 0;
+        const exactBoost = nameMatch ? 0.2 : 0;
+        const importance = Number.isFinite(item.importance) ? item.importance : 0;
+        const score = importance + settlementBoost + exactBoost;
+        return { ...item, score, nameMatch };
+      })
+      .sort((a, b) => b.score - a.score);
+
+    if (DEV_LOG) {
+      console.log("[resolve-location] query", q, "candidates", scored.slice(0, 3));
     }
-    const payload = { lat, lon, source: "place", name: first.display_name || q };
+
+    const top = scored[0];
+    const second = scored[1];
+    const lowConfidence = !top || top.score < 0.2;
+    const ambiguous = second && Math.abs(top.score - second.score) < 0.02 && top.name !== second.name;
+
+    if (lowConfidence || ambiguous) {
+      const payload = {
+        ambiguous: true,
+        message: "Multiple UK locations match this query. Please choose the intended place.",
+        candidates: scored.slice(0, 3).map((item) => ({
+          displayName: item.displayName,
+          adminArea: item.adminArea,
+          lat: item.lat,
+          lon: item.lon,
+          canonicalSlug: item.canonicalSlug,
+          query: item.query,
+        })),
+      };
+      return res.json(payload);
+    }
+
+    const payload = {
+      lat: top.lat,
+      lon: top.lon,
+      source: "place",
+      name: top.displayName || top.name || q,
+      displayName: top.displayName || top.name || q,
+      adminArea: top.adminArea,
+      canonicalSlug: top.canonicalSlug,
+    };
     setCache(cacheKey, payload, CACHE_TTL_MS);
     res.setHeader("Cache-Control", "public, s-maxage=86400, stale-while-revalidate=172800");
     return res.json(payload);

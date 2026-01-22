@@ -2,7 +2,7 @@ import React, { useMemo, useRef, useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import "../App.css";
 import { setMeta } from "../seo";
-import { classifyQueryType } from "../services/existing";
+import { classifyQueryType, geocodeLocation } from "../services/existing";
 import MapAnalyticsPanel from "../components/MapAnalyticsPanel";
 import CrimeTable from "../components/CrimeTable";
 import { getAreaProfile, getSourcesSummary } from "../data";
@@ -21,6 +21,8 @@ export default function HomeRoute() {
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [sourcesSummary, setSourcesSummary] = useState({ lastUpdated: null, sourcesText: "" });
   const [subtitle, setSubtitle] = useState("");
+  const [ambiguousCandidates, setAmbiguousCandidates] = useState([]);
+  const [canonicalSlug, setCanonicalSlug] = useState("");
 
   // simple throttle for geocoding calls (helps avoid rapid repeat clicks)
   const lastGeoMs = useRef(0);
@@ -42,6 +44,7 @@ export default function HomeRoute() {
     setData([]);
     setStatusLine("Resolving location...");
     setCategoryFilter("all");
+    setAmbiguousCandidates([]);
 
     const d = String(nextDate || "").trim();
     if (d && !/^\d{4}-\d{2}$/.test(d)) {
@@ -72,6 +75,9 @@ export default function HomeRoute() {
       if (profile.geo?.lat != null && profile.geo?.lon != null) {
         setResolved({ lat: profile.geo.lat, lng: profile.geo.lon, source: profile.query.kind });
       }
+      if (profile.canonicalSlug) {
+        setCanonicalSlug(profile.canonicalSlug);
+      }
       setData(Array.isArray(profile.safety.latestCrimes) ? profile.safety.latestCrimes : []);
       setSourcesSummary(getSourcesSummary(profile));
       const label = profile.canonicalName || raw;
@@ -81,14 +87,19 @@ export default function HomeRoute() {
         setError(profile.safety.errors.crimes);
       }
     } catch (e) {
-      setError(e.message || "Something went wrong.");
+      if (e?.code === "AMBIGUOUS" && Array.isArray(e.candidates)) {
+        setAmbiguousCandidates(e.candidates);
+        setError(e.message || "Multiple matches found. Please choose the intended place.");
+      } else {
+        setError(e.message || "Something went wrong.");
+      }
     } finally {
       setStatusLine("");
       setLoading(false);
     }
   }
 
-  function openDedicatedPage() {
+  async function openDedicatedPage() {
     setError("");
     const raw = (location || "").trim();
     if (!raw) return;
@@ -101,7 +112,18 @@ export default function HomeRoute() {
     }
 
     if (k === "place") {
-      navigate(`/place/${encodeURIComponent(raw)}`);
+      try {
+        const geo = await geocodeLocation(raw);
+        const slug = geo.canonicalSlug || encodeURIComponent(raw);
+        navigate(`/place/${slug}`);
+      } catch (e) {
+        if (e?.code === "AMBIGUOUS" && Array.isArray(e.candidates)) {
+          setAmbiguousCandidates(e.candidates);
+          setError(e.message || "Multiple matches found. Please choose the intended place.");
+        } else {
+          setError(e.message || "Unable to resolve that place.");
+        }
+      }
       return;
     }
 
@@ -115,6 +137,14 @@ export default function HomeRoute() {
     const queryKind = kind === "latlng" ? "latlng" : kind === "postcode" ? "postcode" : "place";
     return `/report?kind=${encodeURIComponent(queryKind)}&q=${encodeURIComponent(raw)}`;
   }, [location]);
+
+  function applyCandidate(candidate) {
+    if (!candidate) return;
+    const nextQuery = candidate.query || candidate.displayName || "";
+    if (!nextQuery) return;
+    setLocation(nextQuery);
+    fetchCrimes(nextQuery, date);
+  }
 
   useEffect(() => {
     const params = new URLSearchParams(locationState.search || "");
@@ -185,6 +215,24 @@ export default function HomeRoute() {
           <p className="hint">
             Resolved to: <b>{resolved.lat.toFixed(6)}</b>, <b>{resolved.lng.toFixed(6)}</b> ({resolved.source})
           </p>
+        )}
+
+        {ambiguousCandidates.length > 0 && (
+          <div className="hint">
+            <p>Did you mean:</p>
+            <div className="briefActions">
+              {ambiguousCandidates.map((candidate) => (
+                <button
+                  key={`${candidate.displayName}-${candidate.lat}-${candidate.lon}`}
+                  type="button"
+                  className="ghostButton"
+                  onClick={() => applyCandidate(candidate)}
+                >
+                  {candidate.displayName}
+                </button>
+              ))}
+            </div>
+          </div>
         )}
 
         <div className="outputTypeRow">
