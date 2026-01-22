@@ -105,6 +105,10 @@ export default function CityPage() {
         Dive deeper into specific neighborhoods using the area pages, then use the dashboard to compare postcodes that
         match your commute or daily routes.
       </p>
+      <p>
+        Looking for a focused brief? Visit <Link to={`/pro/city/${citySlug}`}>the {city.name} area intelligence
+        brief</Link> for a concise, client-ready summary.
+      </p>
       <div className="contentGrid">
         <div className="contentCard">
           <h3>{city.name} area guide</h3>
