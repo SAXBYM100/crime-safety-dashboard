@@ -293,24 +293,46 @@
 
 .cityTile {
   position: relative;
-  min-height: 200px;
+  min-height: 220px;
   border-radius: 20px;
   overflow: hidden;
-  background-size: cover;
-  background-position: center;
   border: 1px solid rgba(148, 163, 184, 0.35);
   box-shadow: 0 16px 32px rgba(8, 15, 24, 0.18);
+  display: flex;
+  align-items: stretch;
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.cityTile__image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.25s ease;
+}
+
+.cityTile__shade {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: linear-gradient(
+    to top,
+    rgba(0, 0, 0, 0.78) 0%,
+    rgba(0, 0, 0, 0.38) 48%,
+    rgba(0, 0, 0, 0.08) 100%
+  );
 }
 
 .cityTile__overlay {
-  position: absolute;
-  inset: 0;
+  position: relative;
+  z-index: 2;
   padding: 18px;
   display: grid;
   gap: 10px;
   align-content: end;
   color: #f8fafc;
-  background: linear-gradient(180deg, rgba(6, 12, 24, 0.05) 0%, rgba(6, 12, 24, 0.78) 100%);
+  text-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
 }
 
 .cityTile__overlay h3,
@@ -328,6 +350,45 @@
   display: flex;
   gap: 12px;
   flex-wrap: wrap;
+}
+
+.cityTile .btnPrimary,
+.cityTile .btnSecondary {
+  background: rgba(15, 23, 42, 0.35);
+  border-color: rgba(248, 250, 252, 0.5);
+  color: #f8fafc;
+  backdrop-filter: blur(6px);
+}
+
+.cityTile .btnPrimary {
+  background: rgba(15, 118, 110, 0.92);
+  border-color: rgba(15, 118, 110, 0.9);
+}
+
+.cityTile .btnPrimary:hover {
+  background: rgba(13, 148, 136, 0.95);
+}
+
+.cityTile .btnSecondary:hover {
+  background: rgba(15, 23, 42, 0.55);
+}
+
+.cityTile:hover {
+  box-shadow: 0 20px 40px rgba(8, 15, 24, 0.24);
+  transform: translateY(-1px);
+}
+
+.cityTile:hover .cityTile__image {
+  transform: scale(1.03);
+}
+
+.cityTile:hover .cityTile__shade {
+  background: linear-gradient(
+    to top,
+    rgba(0, 0, 0, 0.82) 0%,
+    rgba(0, 0, 0, 0.45) 52%,
+    rgba(0, 0, 0, 0.12) 100%
+  );
 }
 
 .btnPrimary,
@@ -1747,6 +1808,10 @@ th {
     min-height: 220px;
   }
 
+  .cityTile {
+    min-height: 190px;
+  }
+
   :root {
     --mobile-text-maxwidth: 90%;
     --mobile-lineheight-tight: 1.06;
@@ -1792,16 +1857,20 @@ th {
 
   .cityTile__overlay {
     gap: 8px;
+    padding: 14px;
     padding-bottom: 16px;
   }
 
   .cityTile__actions {
     margin-top: 6px;
+    flex-direction: column;
+    gap: 8px;
   }
 
   .btnPrimary,
   .btnSecondary {
     min-height: 44px;
+    width: 100%;
   }
 
   .homeHeroContent {

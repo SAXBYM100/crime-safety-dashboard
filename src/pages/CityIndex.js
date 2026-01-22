@@ -82,11 +82,14 @@ export default function CityIndex() {
 
       <div className="cityTilesGrid">
         {CITY_LIST.map((city) => (
-          <div
-            key={city.slug}
-            className="cityTile"
-            style={{ backgroundImage: `url(${getCityHero(city.slug)})` }}
-          >
+          <div key={city.slug} className="cityTile">
+            <img
+              className="cityTile__image"
+              src={getCityHero(city.slug)}
+              alt={`${city.name} skyline`}
+              loading="lazy"
+            />
+            <div className="cityTile__shade" aria-hidden="true" />
             <div className="cityTile__overlay">
               <h3>{city.name}</h3>
               <p>Reporting patterns and practical next steps for comparing neighborhoods.</p>
