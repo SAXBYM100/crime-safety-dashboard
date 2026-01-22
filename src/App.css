@@ -1645,6 +1645,47 @@ th {
   margin: 18px 0 16px;
 }
 
+.summaryBar--intelligence {
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+}
+
+.summaryCard--primary {
+  grid-column: span 4;
+}
+
+.summaryCard--secondary {
+  grid-column: span 3;
+}
+
+.summaryCard--tertiary {
+  grid-column: span 2;
+}
+
+.assessmentBand {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr);
+  gap: 16px;
+  padding: 16px 18px;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  box-shadow: 0 12px 26px rgba(15, 23, 42, 0.08);
+  margin: 8px 0 16px;
+}
+
+.assessmentMeta {
+  color: var(--muted);
+  display: grid;
+  gap: 6px;
+  font-size: 0.95rem;
+}
+
+.summaryPreview {
+  margin-top: 8px;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
 .summaryCard {
   background: var(--card);
   border: 1px solid var(--border);
@@ -1885,6 +1926,10 @@ th {
   margin: 16px 0;
 }
 
+.impactGrid--drivers {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
 .impactCard {
   background: var(--card);
   border: 1px solid var(--border);
@@ -2121,14 +2166,23 @@ th {
   }
 
   .briefForm {
-    flex-direction: column;
-    align-items: stretch;
+    display: grid;
+    grid-template-columns: 1fr;
+    align-items: start;
+    justify-content: start;
+    min-height: auto;
+    height: auto;
+    gap: 12px;
   }
 
   .briefField,
   .briefField--month,
   .briefActions {
     width: 100%;
+  }
+
+  .briefField--month {
+    margin-top: 0;
   }
 
   .briefActions {
@@ -2161,6 +2215,36 @@ th {
   .proCapture {
     flex-direction: column;
     align-items: stretch;
+  }
+
+  .assessmentBand {
+    grid-template-columns: 1fr;
+  }
+
+  .summaryBar--intelligence {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .summaryCard--primary,
+  .summaryCard--secondary,
+  .summaryCard--tertiary {
+    grid-column: auto;
+  }
+
+  .impactGrid--drivers {
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(200px, 1fr);
+    overflow-x: auto;
+    padding-bottom: 6px;
+    scroll-snap-type: x mandatory;
+  }
+
+  .impactGrid--drivers::-webkit-scrollbar {
+    display: none;
+  }
+
+  .impactGrid--drivers .impactCard {
+    scroll-snap-align: start;
   }
 
   .cityTile {

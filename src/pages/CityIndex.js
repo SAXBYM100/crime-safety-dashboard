@@ -153,12 +153,6 @@ export default function CityIndex() {
 
       {status === "error" && <p className="error">City summaries are temporarily unavailable.</p>}
 
-      <div className="contentCard">
-        <h3>Area reports (generated)</h3>
-        <p>Area-level reports are created after searching in the dashboard.</p>
-        <Link className="btnSecondary" to="/app">Open Intelligence Console</Link>
-      </div>
-
       <div className="trustStrip">
         Powered by official UK Police data • Open methodology • Monthly updates • Independent analysis
       </div>

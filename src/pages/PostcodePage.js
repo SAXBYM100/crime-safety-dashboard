@@ -154,18 +154,38 @@ export default function PostcodePage() {
               const deltas = getCategoryDeltas(trend?.rows || []);
               const deltaMap = new Map(deltas.map((d) => [d.category, d.delta]));
               const drivers = getTopDrivers(trend?.rows || [], 3);
+              const topDriverNames = topCats.map((cat) => cat.category.replace(/-/g, " "));
+              const overallStatus = `${trendSummary.direction}${trendSummary.changePct !== null ? ` \u2014 ${trendSummary.changePct <= 0 ? "Improving" : "Rising"}` : ""}`;
+              const trendLine =
+                trendSummary.changePct !== null
+                  ? `Trend: ${trendSummary.changePct > 0 ? "+" : ""}${trendSummary.changePct.toFixed(1)}% vs previous period`
+                  : "Trend: Data integration in progress";
               return (
                 <>
-                  <div className="summaryBar">
-                    <div className="summaryCard">
-                      <div className="summaryLabel">Safety Score</div>
+                  <div className="assessmentBand">
+                    <div>
+                      <div className="summaryLabel">Overall Risk Assessment</div>
+                      <div className="summaryValue">{overallStatus}</div>
+                      <div className="summaryMeta">
+                        Primary drivers: {topDriverNames.length ? topDriverNames.join(", ") : "Data integration in progress"}
+                      </div>
+                    </div>
+                    <div className="assessmentMeta">
+                      <div>{trendLine}</div>
+                      <div>Data coverage: UK Police API, Environmental risk, Postcode data</div>
+                    </div>
+                  </div>
+
+                  <div className="summaryBar summaryBar--intelligence">
+                    <div className="summaryCard summaryCard--primary">
+                      <div className="summaryLabel">Composite Safety Index</div>
                       <div className="summaryValue">
                         {safety.score !== null ? safety.score : "—"}
                       </div>
                       <div className="summaryMeta">{safety.label}</div>
                     </div>
-                    <div className="summaryCard">
-                      <div className="summaryLabel">Trend</div>
+                    <div className="summaryCard summaryCard--secondary">
+                      <div className="summaryLabel">Risk Trend</div>
                       <div className="summaryValue">{trendSummary.direction}</div>
                       <div className="summaryMeta">
                         {trendSummary.changePct !== null
@@ -175,25 +195,28 @@ export default function PostcodePage() {
                           : "Not enough data yet"}
                       </div>
                     </div>
-                    <div className="summaryCard">
+                    <div className="summaryCard summaryCard--tertiary">
                       <div className="summaryLabel">Benchmarks</div>
                       <div className="summaryValue">City compare</div>
-                      <div className="summaryMeta">Coming soon</div>
+                      <div className="summaryMeta">Data integration in progress</div>
                     </div>
-                    <div className="summaryCard">
+                    <div className="summaryCard summaryCard--secondary">
                       <div className="summaryLabel">Risk</div>
                       <div className="summaryValue">
                         <span className="summaryBadge">Flood risk</span>
                       </div>
                       <div className="summaryMeta">Data integration in progress</div>
                     </div>
-                    <div className="summaryCard">
+                    <div className="summaryCard summaryCard--tertiary">
                       <div className="summaryLabel">Property</div>
                       <div className="summaryValue">Avg price</div>
-                      <div className="summaryMeta">Pending Land Registry data</div>
+                      <div className="summaryMeta">Awaiting official release cycle</div>
                     </div>
                   </div>
 
+                  <div className="summaryPreview">
+                    Composite index based on reported incidents, trend weighting, and category impact.
+                  </div>
                   <details className="summaryExplain">
                     <summary>How we calculate the safety score</summary>
                     <p>
@@ -205,9 +228,14 @@ export default function PostcodePage() {
                   </details>
 
                   {topCats.length > 0 && (
-                    <div className="impactGrid">
+                    <div className="impactGrid impactGrid--drivers">
                       {topCats.map((cat) => {
                         const delta = deltaMap.get(cat.category) || 0;
+                        const shareValue = cat.share || 0;
+                        let driverLabel = "Stable driver";
+                        if (shareValue >= 25) driverLabel = "Primary contributor";
+                        else if (shareValue >= 15) driverLabel = "Secondary contributor";
+                        if (delta >= 3) driverLabel = "Increasing influence";
                         return (
                           <button
                             type="button"
@@ -215,11 +243,10 @@ export default function PostcodePage() {
                             key={cat.category}
                             onClick={() => setCategoryFilter(cat.category)}
                           >
-                            <div className="summaryLabel">Category impact</div>
+                            <div className="summaryLabel">Primary Risk Drivers</div>
                             <div className="summaryValue">{cat.category.replace(/-/g, " ")}</div>
                             <div className="impactMeta">
-                              {cat.share}% share •{" "}
-                              {delta === 0 ? "No change" : `${delta > 0 ? "+" : ""}${delta} MoM`}
+                              {cat.share}% share • {driverLabel}
                             </div>
                           </button>
                         );
@@ -244,6 +271,7 @@ export default function PostcodePage() {
 
             <div style={{ marginTop: 16 }}>
               <h2>12-month trend</h2>
+              <p className="note">Monthly reported incidents, normalized per 1,000 residents.</p>
               {trendError && <p className="error">{trendError}</p>}
               {trend ? <TrendChart rows={trend.rows} /> : !trendError && <p>No trend data.</p>}
               {trend && (
@@ -283,3 +311,4 @@ export default function PostcodePage() {
     </div>
   );
 }
+

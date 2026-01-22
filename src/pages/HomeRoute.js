@@ -30,8 +30,8 @@ export default function HomeRoute() {
   const canPreview = useMemo(() => Boolean((location || "").trim()), [location]);
   useEffect(() => {
     setMeta(
-      "AreaIQ - Location Intelligence Console",
-      "Generate professional safety and risk briefings for any UK postcode, city, or coordinate."
+      "Area IQ Location Intelligence",
+      "Evidence-led safety and risk insights for any UK area."
     );
   }, []);
 
@@ -138,24 +138,24 @@ export default function HomeRoute() {
           alt="Area IQ logo"
         />
         <div>
-          <h1>AreaIQ - Location Intelligence Console</h1>
+          <h1>Area IQ Location Intelligence</h1>
           <p className="sub">
-            Generate professional safety and risk briefings for any UK postcode, city, or coordinate.
+            Evidence-led safety and risk insights for any UK area.
           </p>
         </div>
       </section>
 
       <section className="consoleCard">
         <div className="consoleCardHeader">
-          <h2>Build an intelligence brief</h2>
-          <p>{subtitle || "Enter a postcode, place, or lat,lng to generate a safety snapshot."}</p>
+          <h2>Analyse a location</h2>
+          <p>{subtitle || "Search by postcode or place name. You can also paste coordinates."}</p>
         </div>
 
         <div className="briefForm">
           <div className="briefField">
             <input
               type="text"
-              placeholder="Location (GL50 1AA, Plymouth, or 51.8994,-2.0783)"
+              placeholder="Postcode or place"
               value={location}
               onChange={(e) => setLocation(e.target.value)}
             />
@@ -163,7 +163,7 @@ export default function HomeRoute() {
           <div className="briefField briefField--month">
             <input
               type="text"
-              placeholder="Month optional (YYYY-MM)"
+              placeholder="Time (optional: YYYY-MM)"
               value={date}
               onChange={(e) => setDate(e.target.value)}
             />
@@ -177,7 +177,7 @@ export default function HomeRoute() {
 
         {canPreview && (
           <p className="hint">
-            Tip: Postcodes like <code>GL50 1AA</code> resolve fastest. Place names use OpenStreetMap geocoding.
+            Search by postcode or place name. You can also paste coordinates.
           </p>
         )}
 
