@@ -3,10 +3,7 @@ import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
 import "../App.css";
 import { Icon } from "@iconify/react";
 import mapPin from "@iconify/icons-lucide/map-pin";
-import bookOpen from "@iconify/icons-lucide/book-open";
 import building2 from "@iconify/icons-lucide/building-2";
-import info from "@iconify/icons-lucide/info";
-import mail from "@iconify/icons-lucide/mail";
 import menu from "@iconify/icons-lucide/menu";
 import x from "@iconify/icons-lucide/x";
 
@@ -45,12 +42,8 @@ export default function SiteLayout() {
             <Icon icon={menuOpen ? x : menu} />
           </button>
           <nav className={`siteNav ${menuOpen ? "siteNavOpen" : ""}`}>
-            <NavItem to="/app" onClick={() => setMenuOpen(false)} label={<span className="navItem"><Icon icon={mapPin} />Dashboard</span>} />
-            <NavItem to="/guides" onClick={() => setMenuOpen(false)} label={<span className="navItem"><Icon icon={bookOpen} />Guides</span>} />
-            <NavItem to="/areas" onClick={() => setMenuOpen(false)} label={<span className="navItem"><Icon icon={building2} />Area Pages</span>} />
-            <NavItem to="/city" onClick={() => setMenuOpen(false)} label={<span className="navItem"><Icon icon={building2} />City Hubs</span>} />
-            <NavItem to="/about" onClick={() => setMenuOpen(false)} label={<span className="navItem"><Icon icon={info} />About</span>} />
-            <NavItem to="/contact" onClick={() => setMenuOpen(false)} label={<span className="navItem"><Icon icon={mail} />Contact</span>} />
+            <NavItem to="/dashboard" onClick={() => setMenuOpen(false)} label={<span className="navItem"><Icon icon={mapPin} />Dashboard</span>} />
+            <NavItem to="/city" onClick={() => setMenuOpen(false)} label={<span className="navItem"><Icon icon={building2} />City Guides</span>} />
           </nav>
         </div>
         {menuOpen && <div className="navScrim" onClick={() => setMenuOpen(false)} aria-hidden="true" />}

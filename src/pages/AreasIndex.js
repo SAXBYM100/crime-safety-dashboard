@@ -11,8 +11,8 @@ const DEFAULT_HERO = "/images/cities/drone.jpg";
 export default function AreasIndex() {
   useEffect(() => {
     setMeta(
-      "City Guides - Crime & Safety Dashboard",
-      "Browse city guides with crime context, trends, and practical safety notes."
+      "Area Reports (Generated via Search) - Crime & Safety Dashboard",
+      "Area reports are generated from dashboard searches and direct links."
     );
   }, []);
 
@@ -22,14 +22,14 @@ export default function AreasIndex() {
     <div className="contentWrap">
       <div className="cityHero" style={{ backgroundImage: `url(${heroImage})` }}>
         <div className="cityHero__content heroIntro">
-          <h1>City guides</h1>
+          <h1>Area Reports (Generated via Search)</h1>
           <p>
-            City guides provide context for major UK cities. Each page combines a summary of reporting patterns with
-            practical tips and links back to the dashboard so you can explore specific neighbourhoods.
+            Area reports are generated from dashboard searches and direct links. Use the dashboard to create a report,
+            then return here with a saved URL if needed.
           </p>
           <div className="heroBadgeRow">
-            <span className="heroBadge">City-level context</span>
-            <span className="heroBadge">Neighbourhood guidance</span>
+            <span className="heroBadge">Generated via search</span>
+            <span className="heroBadge">Direct link access</span>
           </div>
         </div>
       </div>

@@ -12,6 +12,7 @@ const CITY_HERO_MAP = {
   birmingham: "/images/cities/birmingham.jpg",
 };
 const DEFAULT_HERO = "/images/cities/drone.jpg";
+const getCityHero = (slug) => CITY_HERO_MAP[slug?.toLowerCase()] || DEFAULT_HERO;
 
 export default function CityIndex() {
   const [summaries, setSummaries] = useState({});
@@ -20,8 +21,8 @@ export default function CityIndex() {
 
   useEffect(() => {
     setMeta(
-      "City Hubs - Crime & Safety Dashboard",
-      "City hubs summarize reporting patterns, livability factors, and links to area reports."
+      "City Guides - Crime & Safety Dashboard",
+      "City guides summarize reporting patterns, livability factors, and links to area reports."
     );
   }, []);
 
@@ -68,10 +69,9 @@ export default function CityIndex() {
     <div className="contentWrap">
       <div className="cityHero" style={{ backgroundImage: `url(${heroImage})` }}>
         <div className="cityHero__content heroIntro">
-          <h1>City hubs</h1>
+          <h1>City guides</h1>
           <p>
-            City hubs aggregate context, guides, and decision-friendly summaries for major UK cities. Start here for a
-            high-level overview, then drill down into postcode-level reports.
+            Browse city-level context, then drill down to postcode-level reports in the dashboard.
           </p>
           <div className="heroBadgeRow">
             <span className="heroBadge">City overview</span>
@@ -80,16 +80,25 @@ export default function CityIndex() {
         </div>
       </div>
 
-      <div className="contentGrid">
+      <div className="cityTilesGrid">
         {CITY_LIST.map((city) => (
-          <div key={city.slug} className="contentCard">
-            <h3>{city.name}</h3>
-            <p>
-              Reporting patterns, transport context, and practical next steps for comparing neighborhoods.
-            </p>
-            <Link to={`/app?q=${encodeURIComponent(city.name)}`}>Explore on dashboard</Link>
-            <Link to={`/city/${city.slug}`}>Open {city.name} hub</Link>
-            <Link to={`/pro/city/${city.slug}`}>Read {city.name} intelligence brief</Link>
+          <div
+            key={city.slug}
+            className="cityTile"
+            style={{ backgroundImage: `url(${getCityHero(city.slug)})` }}
+          >
+            <div className="cityTile__overlay">
+              <h3>{city.name}</h3>
+              <p>Reporting patterns and practical next steps for comparing neighborhoods.</p>
+              <div className="cityTile__actions">
+                <Link className="btnPrimary" to={`/app?q=${encodeURIComponent(city.name)}`}>
+                  Open in Dashboard
+                </Link>
+                <Link className="btnSecondary" to={`/city/${city.slug}`}>
+                  Read guide
+                </Link>
+              </div>
+            </div>
           </div>
         ))}
       </div>
@@ -115,9 +124,9 @@ export default function CityIndex() {
       {status === "error" && <p className="error">City summaries are temporarily unavailable.</p>}
 
       <div className="contentCard">
-        <h3>Area pages</h3>
-        <p>Browse neighbourhood profiles, ward context, and linked dashboard views.</p>
-        <Link to="/areas">Open area pages</Link>
+        <h3>Area reports (generated)</h3>
+        <p>Area-level reports are created after searching in the dashboard.</p>
+        <Link className="btnSecondary" to="/app">Go to Dashboard</Link>
       </div>
 
       <AdSlot slot="1950000001" contentReady />

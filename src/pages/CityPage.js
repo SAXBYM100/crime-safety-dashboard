@@ -262,8 +262,8 @@ export default function CityPage() {
           </section>
 
           <div className="proActions" style={{ marginTop: "18px" }}>
-            <Link className="ghostButton" to="/city">Back to City Hubs</Link>
-            <Link className="ghostButton" to="/areas">Explore Area Pages</Link>
+            <Link className="ghostButton" to="/city">Back to City Guides</Link>
+            <Link className="ghostButton" to="/areas">Area Reports (Generated via Search)</Link>
           </div>
         </>
       )}

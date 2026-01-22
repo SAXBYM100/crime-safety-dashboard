@@ -255,9 +255,9 @@
   inset: 0;
   background: linear-gradient(
     90deg,
-    rgba(255, 255, 255, 0.92) 0%,
-    rgba(255, 255, 255, 0.82) 45%,
-    rgba(255, 255, 255, 0.55) 100%
+    rgba(6, 12, 24, 0.88) 0%,
+    rgba(6, 12, 24, 0.72) 45%,
+    rgba(6, 12, 24, 0.35) 100%
   );
   z-index: 0;
 }
@@ -266,6 +266,100 @@
   position: relative;
   z-index: 1;
   max-width: 720px;
+}
+
+.cityHero .heroIntro h1,
+.cityHero .heroIntro p {
+  color: #f8fafc;
+}
+
+.cityHero .heroBadgeRow {
+  justify-content: flex-start;
+}
+
+.cityHero .heroBadge {
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  color: #f8fafc;
+  box-shadow: 0 10px 22px rgba(15, 23, 42, 0.35);
+}
+
+.cityTilesGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+  margin: 18px 0 28px;
+}
+
+.cityTile {
+  position: relative;
+  min-height: 200px;
+  border-radius: 20px;
+  overflow: hidden;
+  background-size: cover;
+  background-position: center;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  box-shadow: 0 16px 32px rgba(8, 15, 24, 0.18);
+}
+
+.cityTile__overlay {
+  position: absolute;
+  inset: 0;
+  padding: 18px;
+  display: grid;
+  gap: 10px;
+  align-content: end;
+  color: #f8fafc;
+  background: linear-gradient(180deg, rgba(6, 12, 24, 0.05) 0%, rgba(6, 12, 24, 0.78) 100%);
+}
+
+.cityTile__overlay h3,
+.cityTile__overlay p {
+  margin: 0;
+  color: #f8fafc;
+}
+
+.cityTile__overlay p {
+  opacity: 0.88;
+  font-size: 0.95rem;
+}
+
+.cityTile__actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.btnPrimary,
+.btnSecondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 16px;
+  border-radius: 999px;
+  font-weight: 600;
+  text-decoration: none;
+  border: 1px solid transparent;
+}
+
+.btnPrimary {
+  background: var(--accent-deep);
+  color: #fff;
+  box-shadow: 0 10px 20px rgba(15, 118, 110, 0.25);
+}
+
+.btnPrimary:hover {
+  background: var(--accent-strong);
+}
+
+.btnSecondary {
+  background: rgba(15, 23, 42, 0.2);
+  color: #f8fafc;
+  border-color: rgba(148, 163, 184, 0.45);
+}
+
+.btnSecondary:hover {
+  border-color: rgba(248, 250, 252, 0.6);
 }
 
 .contentHero::after {
@@ -1651,6 +1745,125 @@ th {
   .cityHero {
     padding: 24px;
     min-height: 220px;
+  }
+
+  :root {
+    --mobile-text-maxwidth: 90%;
+    --mobile-lineheight-tight: 1.06;
+    --mobile-font-scale-sm: 0.94;
+    --mobile-gap-sm: 10px;
+  }
+
+  .cityHero__content {
+    max-width: var(--mobile-text-maxwidth);
+  }
+
+  .cityHero .heroIntro h1 {
+    font-weight: 600;
+    line-height: var(--mobile-lineheight-tight);
+    text-wrap: balance;
+    margin-bottom: var(--mobile-gap-sm);
+  }
+
+  .cityHero .heroIntro p {
+    line-height: 1.4;
+    text-wrap: balance;
+  }
+
+  .cityTile__overlay h3 {
+    font-size: calc(1rem * var(--mobile-font-scale-sm));
+    line-height: 1.2;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-wrap: balance;
+  }
+
+  .cityTile__overlay p {
+    font-size: calc(0.95rem * var(--mobile-font-scale-sm));
+    line-height: 1.4;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-wrap: balance;
+  }
+
+  .cityTile__overlay {
+    gap: 8px;
+    padding-bottom: 16px;
+  }
+
+  .cityTile__actions {
+    margin-top: 6px;
+  }
+
+  .btnPrimary,
+  .btnSecondary {
+    min-height: 44px;
+  }
+
+  .homeHeroContent {
+    padding: 40px 14px 28px;
+  }
+
+  .homeHeroContent h1 {
+    font-size: clamp(1.7rem, 7.2vw, 2.6rem);
+    line-height: 1.08;
+    margin-bottom: 10px;
+  }
+
+  .heroTextWrap {
+    margin-bottom: 4px;
+  }
+
+  .homeHeroContent p {
+    font-size: 0.98rem;
+  }
+
+  .homeSearchShell {
+    padding: 4px 8px 4px 12px;
+  }
+
+  .homeSearchShell input {
+    height: 48px;
+    font-size: 0.98rem;
+  }
+
+  .homeSearchButton {
+    height: 48px;
+    padding: 0 14px;
+    font-size: 0.96rem;
+  }
+
+  .homeChips {
+    gap: 6px;
+    margin-top: 10px;
+  }
+
+  .chipButton {
+    font-size: 0.86rem;
+    padding: 5px 12px;
+  }
+
+  .heroBadgeRow {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    margin-top: 10px;
+    justify-content: stretch;
+  }
+
+  .heroBadge {
+    font-size: 0.75rem;
+    padding: 5px 8px;
+    box-shadow: 0 8px 16px rgba(8, 15, 24, 0.18);
+  }
+
+  .heroBadge svg {
+    width: 14px;
+    height: 14px;
   }
 }
 
