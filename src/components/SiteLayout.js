@@ -65,6 +65,8 @@ export default function SiteLayout() {
           <span>Crime &amp; Safety Dashboard - UK crime data and safety context.</span>
           <div className="footerLinks">
             <Link to="/about">About</Link>
+            <Link to="/methodology">Methodology</Link>
+            <Link to="/data-sources">Data sources</Link>
             <Link to="/privacy-policy">Privacy</Link>
             <Link to="/terms">Terms</Link>
             <Link to="/contact">Contact</Link>

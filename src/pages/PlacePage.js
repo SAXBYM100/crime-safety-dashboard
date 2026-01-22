@@ -2,12 +2,11 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import { setMeta } from "../seo";
 import TrendChart from "../components/TrendChart";
-import { fetchLast12MonthsCountsByCategory } from "../api/trends";
-import { geocodeLocation, fetchCrimesForLocation } from "../services/existing";
 import { computeSafetyScore, summarizeTrend, getTopCategories } from "../analytics/safetyScore";
 import { getCategoryDeltas, getTopDrivers, trendTakeaway } from "../analytics/trendAnalysis";
 import MapAnalyticsPanel from "../components/MapAnalyticsPanel";
 import CrimeTable from "../components/CrimeTable";
+import { getAreaProfile, getSourcesSummary } from "../data";
 
 export default function PlacePage() {
   const params = useParams();
@@ -27,6 +26,7 @@ export default function PlacePage() {
   const [latestCrimes, setLatestCrimes] = useState([]);
   const [trend, setTrend] = useState(null);
   const [categoryFilter, setCategoryFilter] = useState("all");
+  const [sourcesSummary, setSourcesSummary] = useState({ lastUpdated: null, sourcesText: "" });
 
   useEffect(() => {
     setMeta(
@@ -49,32 +49,19 @@ export default function PlacePage() {
       setStatusLine("Resolving location...");
 
       try {
-        const geo = await geocodeLocation(placeName);
+        const nextProfile = await getAreaProfile(
+          { kind: "place", value: placeName },
+          { onStatus: setStatusLine }
+        );
         if (!mounted) return;
-        setResolved({ lat: geo.lat, lng: geo.lng });
-
-        // Latest crimes (no date -> latest available; your service already handles 404 as [])
-        setStatusLine("Fetching latest crimes...");
-        try {
-          const crimes = await fetchCrimesForLocation(geo.lat, geo.lng);
-          if (!mounted) return;
-          setLatestCrimes(Array.isArray(crimes) ? crimes : []);
-        } catch (crimeErr) {
-          if (!mounted) return;
-          setCrimesError("Latest crime data is temporarily unavailable.");
+        if (nextProfile.geo?.lat != null && nextProfile.geo?.lon != null) {
+          setResolved({ lat: nextProfile.geo.lat, lng: nextProfile.geo.lon });
         }
-
-        // Trend chart (your trends.js now tolerates missing months)
-        setStatusLine("Analyzing trends...");
-        try {
-          const t = await fetchLast12MonthsCountsByCategory(geo.lat, geo.lng);
-          if (!mounted) return;
-          setTrend(t);
-        } catch (trendErr) {
-          if (!mounted) return;
-          setTrendError("Trend data is temporarily unavailable.");
-        }
-
+        setLatestCrimes(nextProfile.safety.latestCrimes || []);
+        setTrend(nextProfile.safety.trend || null);
+        setCrimesError(nextProfile.safety.errors?.crimes || "");
+        setTrendError(nextProfile.safety.errors?.trend || "");
+        setSourcesSummary(getSourcesSummary(nextProfile));
         setStatus("ready");
         setStatusLine("");
       } catch (e) {
@@ -154,6 +141,12 @@ export default function PlacePage() {
             {resolved && (
               <p style={{ opacity: 0.75 }}>
                 Resolved to: <b>{resolved.lat.toFixed(6)}</b>, <b>{resolved.lng.toFixed(6)}</b>
+              </p>
+            )}
+            {sourcesSummary.sourcesText && (
+              <p className="sourceLine">
+                Last updated: {sourcesSummary.lastUpdated ? new Date(sourcesSummary.lastUpdated).toLocaleDateString() : "Pending"} • Sources:{" "}
+                {sourcesSummary.sourcesText}
               </p>
             )}
 

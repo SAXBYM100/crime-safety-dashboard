@@ -845,6 +845,12 @@ th {
   color: var(--muted);
 }
 
+.sourceLine {
+  margin: 0.5rem 0 0.75rem;
+  font-size: 0.95rem;
+  color: var(--muted);
+}
+
 .skeleton {
   position: relative;
   overflow: hidden;
