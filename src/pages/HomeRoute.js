@@ -1,5 +1,5 @@
 import React, { useMemo, useRef, useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import "../App.css";
 import { setMeta } from "../seo";
 import { classifyQueryType } from "../services/existing";
@@ -9,6 +9,7 @@ import { getAreaProfile, getSourcesSummary } from "../data";
 
 export default function HomeRoute() {
   const navigate = useNavigate();
+  const locationState = useLocation();
 
   const [location, setLocation] = useState("");
   const [date, setDate] = useState(""); // YYYY-MM optional
@@ -23,6 +24,8 @@ export default function HomeRoute() {
 
   // simple throttle for geocoding calls (helps avoid rapid repeat clicks)
   const lastGeoMs = useRef(0);
+  const lastQueryRef = useRef("");
+  const lastMonthRef = useRef("");
 
   const canPreview = useMemo(() => Boolean((location || "").trim()), [location]);
   useEffect(() => {
@@ -32,7 +35,7 @@ export default function HomeRoute() {
     );
   }, []);
 
-  async function fetchCrimes() {
+  async function fetchCrimes(nextLocation = location, nextDate = date) {
     setError("");
     setResolved(null);
     setLoading(true);
@@ -40,7 +43,7 @@ export default function HomeRoute() {
     setStatusLine("Resolving location...");
     setCategoryFilter("all");
 
-    const d = date.trim();
+    const d = String(nextDate || "").trim();
     if (d && !/^\d{4}-\d{2}$/.test(d)) {
       setLoading(false);
       setError('Date must be YYYY-MM (e.g. "2024-01") or left blank.');
@@ -54,7 +57,7 @@ export default function HomeRoute() {
       if (wait > 0) await new Promise((r) => setTimeout(r, wait));
       lastGeoMs.current = Date.now();
 
-      const raw = location.trim();
+      const raw = String(nextLocation || "").trim();
       const kind = classifyQueryType(raw).kind;
       if (kind === "empty") {
         setError("Enter a location to search.");
@@ -112,6 +115,19 @@ export default function HomeRoute() {
     const queryKind = kind === "latlng" ? "latlng" : kind === "postcode" ? "postcode" : "place";
     return `/report?kind=${encodeURIComponent(queryKind)}&q=${encodeURIComponent(raw)}`;
   }, [location]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(locationState.search || "");
+    const q = (params.get("q") || "").trim();
+    const m = (params.get("month") || "").trim();
+    if (!q) return;
+    if (q === lastQueryRef.current && m === lastMonthRef.current) return;
+    setLocation(q);
+    if (m) setDate(m);
+    lastQueryRef.current = q;
+    lastMonthRef.current = m;
+    fetchCrimes(q, m || date);
+  }, [locationState.search, date]);
 
   return (
     <div className="App">
