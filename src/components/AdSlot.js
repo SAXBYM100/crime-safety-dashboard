@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
 
 const ELIGIBLE_PREFIXES = ["/guides", "/areas", "/about", "/privacy-policy", "/terms", "/contact"];
@@ -14,7 +14,9 @@ function isEligiblePath(pathname) {
 function ensureAdScript(client) {
   if (adsenseLoaded) return;
   if (typeof document === "undefined") return;
-  const existing = document.querySelector(`script[data-ad-client="${client}"]`);
+  const existing = document.querySelector(
+    `script[data-ad-client="${client}"], script[src*="pagead/js/adsbygoogle.js?client=${client}"]`
+  );
   if (existing) {
     adsenseLoaded = true;
     return;
@@ -33,21 +35,41 @@ export default function AdSlot({ slot, contentReady = true, style = {} }) {
   const eligible = useMemo(() => isEligiblePath(pathname), [pathname]);
   const client = process.env.REACT_APP_ADSENSE_CLIENT || DEFAULT_CLIENT;
   const placeholder = style?.minHeight ? undefined : { minHeight: 140 };
+  const containerRef = useRef(null);
+  const [inView, setInView] = useState(false);
 
   useEffect(() => {
-    if (!eligible || !contentReady) return;
+    if (!eligible || !contentReady) return undefined;
+    if (typeof IntersectionObserver === "undefined") {
+      setInView(true);
+      return undefined;
+    }
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) setInView(true);
+        });
+      },
+      { rootMargin: "200px 0px" }
+    );
+    if (containerRef.current) observer.observe(containerRef.current);
+    return () => observer.disconnect();
+  }, [eligible, contentReady]);
+
+  useEffect(() => {
+    if (!eligible || !contentReady || !inView) return;
     ensureAdScript(client);
     try {
       (window.adsbygoogle = window.adsbygoogle || []).push({});
     } catch {
       // ignore ad errors during load
     }
-  }, [eligible, contentReady, slot, client]);
+  }, [eligible, contentReady, slot, client, inView]);
 
   if (!eligible || !contentReady) return null;
 
   return (
-    <div style={{ margin: "18px 0", position: "relative", ...placeholder }}>
+    <div ref={containerRef} style={{ margin: "18px 0", position: "relative", ...placeholder }}>
       <div
         className="adPlaceholder"
         aria-hidden="true"
