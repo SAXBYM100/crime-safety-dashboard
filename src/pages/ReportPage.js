@@ -5,6 +5,8 @@ import { getAreaProfile, getSourcesSummary } from "../data";
 import { classifyQueryType } from "../services/existing";
 import { computeSafetyScore, summarizeTrend, getTopCategories } from "../analytics/safetyScore";
 import { getTopDrivers } from "../analytics/trendAnalysis";
+import { hasProAccess } from "../utils/proAccess";
+import ProGate from "../components/ProGate";
 
 export default function ReportPage() {
   const location = useLocation();
@@ -23,12 +25,14 @@ export default function ReportPage() {
   const [error, setError] = useState("");
   const [profile, setProfile] = useState(null);
   const [sourcesSummary, setSourcesSummary] = useState({ lastUpdated: null, sourcesText: "" });
+  const [isPro, setIsPro] = useState(false);
 
   useEffect(() => {
     setMeta(
       "Area Intelligence Report | Area IQ",
       "Download a concise Area IQ report with safety trends and source references."
     );
+    setIsPro(hasProAccess());
   }, []);
 
   useEffect(() => {
@@ -73,11 +77,12 @@ export default function ReportPage() {
   return (
     <div className="contentWrap reportPage">
       <div className="reportActions">
-        <button type="button" className="primaryButton" onClick={() => window.print()}>
+        <button type="button" className="primaryButton" onClick={() => window.print()} disabled={!isPro}>
           Download Area Report (PDF)
         </button>
         <Link to="/app" className="reportLink">Back to dashboard</Link>
       </div>
+      {!isPro && <ProGate />}
 
       <section className="reportCard">
         <header className="reportHeader">

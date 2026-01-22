@@ -67,6 +67,7 @@ export default function SiteLayout() {
             <Link to="/about">About</Link>
             <Link to="/methodology">Methodology</Link>
             <Link to="/data-sources">Data sources</Link>
+            <Link to="/pro">Pro</Link>
             <Link to="/privacy-policy">Privacy</Link>
             <Link to="/terms">Terms</Link>
             <Link to="/contact">Contact</Link>
