@@ -15,6 +15,8 @@
  * @typedef {Object} AreaProfile
  * @property {AreaQuery} query
  * @property {string} canonicalName
+ * @property {string} displayName
+ * @property {string} adminArea
  * @property {{lat: (number|null), lon: (number|null)}} geo
  * @property {{latestCrimes: Array, trend: {rows: Array}, errors: Object}} safety
  * @property {{summary?: string, status?: string}} housing

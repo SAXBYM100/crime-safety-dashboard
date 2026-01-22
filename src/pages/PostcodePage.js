@@ -9,6 +9,7 @@ import MapAnalyticsPanel from "../components/MapAnalyticsPanel";
 import CrimeTable from "../components/CrimeTable";
 import SafetyGauge from "../components/SafetyGauge";
 import { getAreaProfile, getSourcesSummary } from "../data";
+import { pickPrimaryName, toTitleCase } from "../utils/text";
 
 export default function PostcodePage() {
   const params = useParams();
@@ -20,6 +21,7 @@ export default function PostcodePage() {
   const [trendError, setTrendError] = useState("");
   const [crimesError, setCrimesError] = useState("");
   const [resolved, setResolved] = useState(null); // {lat,lng}
+  const [displayName, setDisplayName] = useState("");
   const [latestCrimes, setLatestCrimes] = useState([]);
   const [trend, setTrend] = useState(null);
   const [categoryFilter, setCategoryFilter] = useState("all");
@@ -41,6 +43,7 @@ export default function PostcodePage() {
       setTrendError("");
       setCrimesError("");
       setResolved(null);
+      setDisplayName("");
       setLatestCrimes([]);
       setTrend(null);
       setStatusLine("Resolving location...");
@@ -54,6 +57,9 @@ export default function PostcodePage() {
         if (nextProfile.geo?.lat != null && nextProfile.geo?.lon != null) {
           setResolved({ lat: nextProfile.geo.lat, lng: nextProfile.geo.lon });
         }
+        const preferredName = nextProfile.adminArea || nextProfile.displayName || nextProfile.canonicalName;
+        const primaryName = pickPrimaryName(preferredName);
+        setDisplayName(toTitleCase(primaryName));
         setLatestCrimes(nextProfile.safety.latestCrimes || []);
         setTrend(nextProfile.safety.trend || null);
         setCrimesError(nextProfile.safety.errors?.crimes || "");
@@ -64,6 +70,7 @@ export default function PostcodePage() {
       } catch (e) {
         if (!mounted) return;
         setError(String(e?.message || e));
+        setDisplayName("");
         setStatus("error");
         setStatusLine("");
       }
@@ -78,7 +85,7 @@ export default function PostcodePage() {
   return (
     <div className="App">
       <div style={{ maxWidth: 980, margin: "0 auto", padding: "24px 16px" }}>
-        <h1>Crime stats: {postcode}</h1>
+        <h1>{displayName ? `${displayName} Crime Statistics` : "Location report"}</h1>
 
         {status === "loading" && (
           <>

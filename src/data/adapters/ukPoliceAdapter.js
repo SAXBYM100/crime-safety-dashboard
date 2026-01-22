@@ -44,6 +44,8 @@ export async function ukPoliceAdapter(baseProfile, options = {}) {
 
   return {
     canonicalName: geo.displayName || geo.name || baseProfile.canonicalName,
+    displayName: geo.displayName || geo.name || baseProfile.displayName,
+    adminArea: geo.adminArea || baseProfile.adminArea,
     canonicalSlug: geo.canonicalSlug || baseProfile.canonicalSlug,
     geo: { lat: geo.lat, lon: geo.lng },
     safety,

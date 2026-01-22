@@ -3,6 +3,8 @@ export function buildEmptyProfile(query) {
   return {
     query,
     canonicalName: query.value,
+    displayName: query.value,
+    adminArea: "",
     geo: { lat: null, lon: null },
     safety: {
       latestCrimes: [],

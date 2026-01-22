@@ -14,6 +14,14 @@ const SETTLEMENT_TYPES = new Set([
   "neighbourhood",
   "locality",
 ]);
+const SUGGESTION_TYPES = new Set(["city", "town", "village"]);
+const SUGGESTION_ADDRESSTYPES = new Set([
+  "city",
+  "town",
+  "village",
+  "county",
+  "state_district",
+]);
 
 function isLikelyLatLngPair(text) {
   const raw = String(text || "").trim();
@@ -159,8 +167,24 @@ function buildCandidate(item) {
     importance: Number(item.importance || 0),
     type: item.type || "",
     class: item.class || "",
+    addresstype: item.addresstype || "",
     query,
   };
+}
+
+function isValidSuggestion(candidate) {
+  if (!candidate) return false;
+  if (SUGGESTION_TYPES.has(candidate.type)) return true;
+  if (SUGGESTION_ADDRESSTYPES.has(candidate.addresstype)) return true;
+  return candidate.class === "boundary" && candidate.type === "administrative";
+}
+
+function formatSuggestionDisplayName(candidate) {
+  const primary = candidate.name || candidate.displayName || candidate.query;
+  const adminArea = candidate.adminArea || "UK";
+  if (!primary) return "";
+  const suffix = /england/i.test(adminArea) ? adminArea : `${adminArea}, England`;
+  return `${primary}, ${suffix}`;
 }
 
 module.exports = async (req, res) => {
@@ -223,7 +247,7 @@ module.exports = async (req, res) => {
     }
 
     const encoded = encodeURIComponent(q);
-    const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&limit=5&addressdetails=1&namedetails=1&countrycodes=gb&viewbox=-8.6,60.9,1.8,49.8&bounded=1&q=${encoded}`;
+    const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&limit=10&addressdetails=1&namedetails=1&countrycodes=gb&viewbox=-8.6,60.9,1.8,49.8&bounded=1&q=${encoded}`;
     const results = await fetchJsonOrThrow(url, {
       "User-Agent": "crime-safety-dashboard/1.0 (https://crime-safety-dashboard.vercel.app)",
     });
@@ -257,11 +281,15 @@ module.exports = async (req, res) => {
     const ambiguous = second && Math.abs(top.score - second.score) < 0.02 && top.name !== second.name;
 
     if (lowConfidence || ambiguous) {
+      const suggestions = scored.filter(isValidSuggestion).slice(0, 3);
       const payload = {
         ambiguous: true,
-        message: "Multiple UK locations match this query. Please choose the intended place.",
-        candidates: scored.slice(0, 3).map((item) => ({
-          displayName: item.displayName,
+        message:
+          suggestions.length > 0
+            ? "Multiple UK locations match this query. Please choose the intended place."
+            : "No matching UK places found. Try a postcode for fastest results.",
+        candidates: suggestions.map((item) => ({
+          displayName: formatSuggestionDisplayName(item),
           adminArea: item.adminArea,
           lat: item.lat,
           lon: item.lon,

@@ -8,6 +8,7 @@ import MapAnalyticsPanel from "../components/MapAnalyticsPanel";
 import CrimeTable from "../components/CrimeTable";
 import SafetyGauge from "../components/SafetyGauge";
 import { getAreaProfile, getSourcesSummary } from "../data";
+import { pickPrimaryName, toTitleCase } from "../utils/text";
 
 export default function PlacePage() {
   const params = useParams();
@@ -25,6 +26,7 @@ export default function PlacePage() {
   const [trendError, setTrendError] = useState("");
   const [crimesError, setCrimesError] = useState("");
   const [resolved, setResolved] = useState(null);
+  const [displayName, setDisplayName] = useState("");
   const [latestCrimes, setLatestCrimes] = useState([]);
   const [trend, setTrend] = useState(null);
   const [categoryFilter, setCategoryFilter] = useState("all");
@@ -54,6 +56,7 @@ export default function PlacePage() {
       setTrendError("");
       setCrimesError("");
       setResolved(null);
+      setDisplayName("");
       setLatestCrimes([]);
       setTrend(null);
       setAmbiguousCandidates([]);
@@ -68,6 +71,8 @@ export default function PlacePage() {
         if (nextProfile.geo?.lat != null && nextProfile.geo?.lon != null) {
           setResolved({ lat: nextProfile.geo.lat, lng: nextProfile.geo.lon });
         }
+        const primaryName = pickPrimaryName(nextProfile.displayName || nextProfile.canonicalName);
+        setDisplayName(toTitleCase(primaryName));
         setLatestCrimes(nextProfile.safety.latestCrimes || []);
         setTrend(nextProfile.safety.trend || null);
         setCrimesError(nextProfile.safety.errors?.crimes || "");
@@ -83,6 +88,7 @@ export default function PlacePage() {
         } else {
           setError(String(e?.message || e));
         }
+        setDisplayName("");
         setStatus("error");
         setStatusLine("");
       }
@@ -97,7 +103,7 @@ export default function PlacePage() {
   return (
     <div className="App">
       <div style={{ maxWidth: 980, margin: "0 auto", padding: "24px 16px" }}>
-        <h1>{placeName} crime statistics</h1>
+        <h1>{displayName ? `${displayName} Crime Statistics` : "Location report"}</h1>
 
         {status === "loading" && (
           <>
