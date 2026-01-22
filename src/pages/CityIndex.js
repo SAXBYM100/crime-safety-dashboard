@@ -6,6 +6,12 @@ import cities from "../data/cities.json";
 import { fetchCitySummary } from "../services/cityIntelligence";
 
 const CITY_LIST = Object.entries(cities).map(([slug, data]) => ({ slug, ...data }));
+const CITY_HERO_MAP = {
+  london: "/images/cities/London.jpg",
+  manchester: "/images/cities/manchester.jpg",
+  birmingham: "/images/cities/birmingham.jpg",
+};
+const DEFAULT_HERO = "/images/cities/drone.jpg";
 
 export default function CityIndex() {
   const [summaries, setSummaries] = useState({});
@@ -56,10 +62,12 @@ export default function CityIndex() {
     return ukAverage.toFixed(1);
   }, [ukAverage]);
 
+  const heroImage = DEFAULT_HERO;
+
   return (
     <div className="contentWrap">
-      <div className="contentHero">
-        <div className="heroIntro">
+      <div className="cityHero" style={{ backgroundImage: `url(${heroImage})` }}>
+        <div className="cityHero__content heroIntro">
           <h1>City hubs</h1>
           <p>
             City hubs aggregate context, guides, and decision-friendly summaries for major UK cities. Start here for a
@@ -70,11 +78,6 @@ export default function CityIndex() {
             <span className="heroBadge">Linked area reports</span>
           </div>
         </div>
-        <img
-          className="heroVisual"
-          src={`${process.env.PUBLIC_URL}/visuals/city-banner.svg`}
-          alt="Abstract city illustration"
-        />
       </div>
 
       <div className="contentGrid">

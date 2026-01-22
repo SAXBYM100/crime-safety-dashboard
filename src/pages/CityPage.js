@@ -6,6 +6,12 @@ import cities from "../data/cities.json";
 import { fetchCityIntelligence, fetchUkAverageRate } from "../services/cityIntelligence";
 
 const CITY_LIST = Object.entries(cities).map(([slug, data]) => ({ slug, ...data }));
+const CITY_HERO_MAP = {
+  london: "/images/cities/London.jpg",
+  manchester: "/images/cities/manchester.jpg",
+  birmingham: "/images/cities/birmingham.jpg",
+};
+const DEFAULT_HERO = "/images/cities/drone.jpg";
 
 function formatNumber(value, digits = 0) {
   if (!Number.isFinite(value)) return "-";
@@ -91,11 +97,12 @@ export default function CityPage() {
 
   const safestWard = intel?.safestAreas?.[0];
   const highestWard = intel?.highestAreas?.[0];
+  const heroImage = CITY_HERO_MAP[citySlug?.toLowerCase()] || DEFAULT_HERO;
 
   return (
     <div className="contentWrap">
-      <div className="contentHero">
-        <div className="heroIntro">
+      <div className="cityHero" style={{ backgroundImage: `url(${heroImage})` }}>
+        <div className="cityHero__content heroIntro">
           <h1>{city.name} Safety & Crime Intelligence (2026)</h1>
           <p>
             Verified neighbourhood-level crime data, trends, and local safety context - powered by official UK Police
@@ -114,11 +121,6 @@ export default function CityPage() {
             </Link>
           </div>
         </div>
-        <img
-          className="heroVisual"
-          src={`${process.env.PUBLIC_URL}/visuals/city-banner.svg`}
-          alt={`${city.name} city skyline illustration`}
-        />
       </div>
 
       {status === "error" && <p className="error">{error}</p>}

@@ -6,33 +6,32 @@ import cities from "../data/cities.json";
 
 const AREAS = Object.entries(cities).map(([slug, data]) => ({ slug, name: data.name }));
 
+const DEFAULT_HERO = "/images/cities/drone.jpg";
+
 export default function AreasIndex() {
   useEffect(() => {
     setMeta(
-      "Area Pages - Crime & Safety Dashboard",
-      "Browse city and area summaries with crime context, trends, and practical safety notes."
+      "City Guides - Crime & Safety Dashboard",
+      "Browse city guides with crime context, trends, and practical safety notes."
     );
   }, []);
 
+  const heroImage = DEFAULT_HERO;
+
   return (
     <div className="contentWrap">
-      <div className="contentHero">
-        <div className="heroIntro">
-          <h1>Area Pages</h1>
+      <div className="cityHero" style={{ backgroundImage: `url(${heroImage})` }}>
+        <div className="cityHero__content heroIntro">
+          <h1>City guides</h1>
           <p>
-            Area pages provide context for major UK cities. Each page combines a summary of reporting patterns with
-            practical tips and links back to the dashboard so you can explore specific neighborhoods.
+            City guides provide context for major UK cities. Each page combines a summary of reporting patterns with
+            practical tips and links back to the dashboard so you can explore specific neighbourhoods.
           </p>
           <div className="heroBadgeRow">
             <span className="heroBadge">City-level context</span>
-            <span className="heroBadge">Neighborhood guidance</span>
+            <span className="heroBadge">Neighbourhood guidance</span>
           </div>
         </div>
-        <img
-          className="heroVisual"
-          src={`${process.env.PUBLIC_URL}/visuals/city-banner.svg`}
-          alt="Abstract city illustration"
-        />
       </div>
       <div className="contentGrid">
         {AREAS.map((area) => (

@@ -238,6 +238,36 @@
   margin-bottom: 24px;
 }
 
+.cityHero {
+  position: relative;
+  border-radius: 24px;
+  padding: 48px;
+  min-height: 260px;
+  background-size: cover;
+  background-position: center;
+  overflow: hidden;
+  margin-bottom: 24px;
+}
+
+.cityHero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.92) 0%,
+    rgba(255, 255, 255, 0.82) 45%,
+    rgba(255, 255, 255, 0.55) 100%
+  );
+  z-index: 0;
+}
+
+.cityHero__content {
+  position: relative;
+  z-index: 1;
+  max-width: 720px;
+}
+
 .contentHero::after {
   content: "";
   position: absolute;
@@ -1614,6 +1644,13 @@ th {
   .ctaGrid,
   .iconGrid {
     gap: 12px;
+  }
+}
+
+@media (max-width: 640px) {
+  .cityHero {
+    padding: 24px;
+    min-height: 220px;
   }
 }
 
