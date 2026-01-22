@@ -19,6 +19,7 @@ export default function HomeRoute() {
   const [statusLine, setStatusLine] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [sourcesSummary, setSourcesSummary] = useState({ lastUpdated: null, sourcesText: "" });
+  const [subtitle, setSubtitle] = useState("");
 
   // simple throttle for geocoding calls (helps avoid rapid repeat clicks)
   const lastGeoMs = useRef(0);
@@ -70,6 +71,9 @@ export default function HomeRoute() {
       }
       setData(Array.isArray(profile.safety.latestCrimes) ? profile.safety.latestCrimes : []);
       setSourcesSummary(getSourcesSummary(profile));
+      const label = profile.canonicalName || raw;
+      const monthLabel = d ? d : "Latest";
+      setSubtitle(`Safety insights for ${label} • ${monthLabel} • Official UK Police data`);
       if (profile.safety.errors?.crimes) {
         setError(profile.safety.errors.crimes);
       }
@@ -112,11 +116,15 @@ export default function HomeRoute() {
   return (
     <div className="App">
       <header className="hero">
-        <img className="heroImg" src={process.env.PUBLIC_URL + "/hero.svg"} alt="Map pin illustration" />
+        <img
+          className="heroImg"
+          src={`${process.env.PUBLIC_URL}/brand/area-iq-mark.svg`}
+          alt="Area IQ logo"
+        />
         <div>
-          <h1>Crime &amp; Safety Dashboard</h1>
+          <h1>Area IQ — Safety Intelligence</h1>
           <p className="sub">
-            Search by <b>postcode</b>, <b>place name</b>, or <b>lat,lng</b> to explore street-level crime data.
+            {subtitle || "Enter a postcode, place, or lat,lng to generate a safety snapshot."}
           </p>
         </div>
       </header>
