@@ -15,6 +15,7 @@ import Methodology from "./pages/Methodology";
 import DataSources from "./pages/DataSources";
 import ReportPage from "./pages/ReportPage";
 import ProPage from "./pages/ProPage";
+import ReportsPage from "./pages/ReportsPage";
 import ProCityLanding from "./pages/pro/ProCityLanding";
 import GuidesIndex from "./pages/GuidesIndex";
 import GuideCrimeData from "./pages/guides/GuideCrimeData";
@@ -56,6 +57,7 @@ export default function App() {
           <Route path="/terms" element={<Terms />} />
           <Route path="/contact" element={<Contact />} />
           <Route path="/report" element={<ReportPage />} />
+          <Route path="/reports" element={<ReportsPage />} />
           <Route path="/pro" element={<ProPage />} />
           <Route path="/pro/city/:citySlug" element={<ProCityLanding />} />
 

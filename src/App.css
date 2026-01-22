@@ -158,6 +158,18 @@
   padding: 28px 18px 42px;
 }
 
+.pageShell {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 28px 18px 42px;
+}
+
+.sectionBlock {
+  display: grid;
+  gap: 12px;
+  margin: 24px 0;
+}
+
 .contentWrap p {
   line-height: 1.7;
   color: var(--muted);
@@ -401,6 +413,7 @@
   font-weight: 600;
   text-decoration: none;
   border: 1px solid transparent;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.2s ease, border-color 0.2s ease;
 }
 
 .btnPrimary {
@@ -411,6 +424,8 @@
 
 .btnPrimary:hover {
   background: var(--accent-strong);
+  transform: translateY(-1px);
+  box-shadow: 0 10px 22px rgba(15, 118, 110, 0.25);
 }
 
 .btnSecondary {
@@ -421,6 +436,8 @@
 
 .btnSecondary:hover {
   border-color: rgba(248, 250, 252, 0.6);
+  transform: translateY(-1px);
+  box-shadow: 0 10px 22px rgba(15, 23, 42, 0.12);
 }
 
 .contentHero::after {
@@ -483,6 +500,250 @@
   grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
   gap: 12px;
   margin-top: 18px;
+}
+
+.consoleHeaderCard {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 20px;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.12);
+  margin-bottom: 18px;
+}
+
+.consoleCard {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 22px;
+  box-shadow: 0 16px 32px rgba(15, 23, 42, 0.12);
+  display: grid;
+  gap: 16px;
+}
+
+.consoleCardHeader h2 {
+  margin: 0 0 6px;
+}
+
+.consoleCardHeader p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.briefForm {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: flex-end;
+}
+
+.briefField {
+  flex: 1 1 260px;
+  min-width: 220px;
+}
+
+.briefField--month {
+  flex: 0 1 220px;
+}
+
+.briefField input {
+  width: 100%;
+  height: 44px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 10px 12px;
+  background: var(--surface);
+  box-sizing: border-box;
+}
+
+.briefActions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.consoleCard .briefActions {
+  margin-top: 6px;
+  justify-content: flex-start;
+}
+
+.consoleCard .briefActions .ghostButton {
+  height: 44px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--ink);
+  font-weight: 600;
+  padding: 0 18px;
+}
+
+.briefActions .primaryButton,
+.briefActions .ghostButton {
+  min-height: 44px;
+  padding: 0 18px;
+}
+
+.outputTypeRow {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
+}
+
+.outputTypeRow .ghostButton {
+  height: 44px;
+  border-radius: 999px;
+  border: 1px solid rgba(15, 118, 110, 0.4);
+  background: var(--surface);
+  color: var(--accent);
+  font-weight: 600;
+  font-size: 0.9rem;
+  padding: 0 14px;
+}
+
+.outputLabel {
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.outputOptions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.outputOption {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--ink);
+  border-radius: 999px;
+  padding: 8px 14px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: default;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.2s ease;
+}
+
+.outputOption--action {
+  border-color: rgba(15, 118, 110, 0.4);
+  color: var(--accent);
+  cursor: pointer;
+}
+
+.outputOption--action:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 22px rgba(15, 118, 110, 0.2);
+}
+
+.outputOption--action:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.outputOption--active {
+  border-color: rgba(15, 118, 110, 0.4);
+  color: var(--accent);
+}
+
+.outputOption--active:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 22px rgba(15, 118, 110, 0.2);
+}
+
+.outputOption--disabled {
+  opacity: 0.6;
+}
+
+.outputOption--muted {
+  opacity: 0.5;
+  border-color: rgba(148, 163, 184, 0.35);
+  color: var(--muted);
+}
+
+.outputBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 6px;
+  margin-left: 6px;
+  border-radius: 999px;
+  background: rgba(15, 118, 110, 0.15);
+  color: var(--accent);
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.methodologyPanel {
+  margin-top: 24px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+  padding: 10px 14px;
+}
+
+.methodologyPanel summary {
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.methodologyBody {
+  margin-top: 10px;
+}
+
+.heroActions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 18px;
+}
+
+.heroActions .ghostButton {
+  background: rgba(15, 23, 42, 0.5);
+  border-color: rgba(148, 163, 184, 0.45);
+  color: #f8fafc;
+}
+
+.heroActions .ghostButton:hover {
+  border-color: rgba(248, 250, 252, 0.65);
+  color: #fff;
+}
+
+.trustStrip {
+  margin: 22px 0 10px;
+  padding: 12px 16px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 0.92rem;
+  text-align: center;
+}
+
+.proFooterCta {
+  margin: 22px 0 0;
+  padding: 14px 16px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--cloud);
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+  color: var(--muted);
+}
+
+.proFooterCta a {
+  color: var(--blue);
+  text-decoration: none;
+  font-weight: 600;
 }
 
 .heroStat {
@@ -791,10 +1052,13 @@
   border: none;
   cursor: pointer;
   font-size: 1.05rem;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.2s ease;
 }
 
 .primaryButton:hover {
   background: var(--accent-strong);
+  transform: translateY(-1px);
+  box-shadow: 0 10px 22px rgba(15, 118, 110, 0.25);
 }
 
 .primaryButton:focus-visible {
@@ -1173,6 +1437,42 @@ th {
   box-shadow: 0 14px 28px rgba(15, 23, 42, 0.12);
 }
 
+.proCompareGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+  margin: 18px 0;
+}
+
+.proCompareCard {
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 18px;
+  background: var(--surface);
+  box-shadow: 0 12px 26px rgba(15, 23, 42, 0.1);
+}
+
+.proCompareCard--featured {
+  border-color: rgba(15, 118, 110, 0.4);
+  box-shadow: 0 16px 32px rgba(15, 118, 110, 0.12);
+}
+
+.proCapture {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.proCapture input {
+  flex: 1 1 240px;
+  min-width: 220px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 10px 12px;
+  height: 44px;
+}
+
 .proActions {
   display: flex;
   flex-wrap: wrap;
@@ -1191,11 +1491,14 @@ th {
   border-radius: 999px;
   font-weight: 600;
   cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.2s ease, color 0.2s ease;
 }
 
 .ghostButton:hover {
   border-color: rgba(15, 118, 110, 0.4);
   color: var(--accent);
+  transform: translateY(-1px);
+  box-shadow: 0 10px 22px rgba(15, 23, 42, 0.12);
 }
 
 .reportHeader {
@@ -1806,6 +2109,58 @@ th {
   .cityHero {
     padding: 24px;
     min-height: 220px;
+  }
+
+  .consoleHeaderCard {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .consoleCard {
+    padding: 18px;
+  }
+
+  .briefForm {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .briefField,
+  .briefField--month,
+  .briefActions {
+    width: 100%;
+  }
+
+  .briefActions {
+    flex-direction: column;
+  }
+
+  .briefActions .primaryButton,
+  .briefActions .ghostButton {
+    width: 100%;
+  }
+
+  .outputOptions {
+    width: 100%;
+  }
+
+  .heroActions {
+    width: 100%;
+  }
+
+  .heroActions .primaryButton,
+  .heroActions .ghostButton {
+    width: 100%;
+  }
+
+  .trustStrip {
+    font-size: 0.86rem;
+    border-radius: 16px;
+  }
+
+  .proCapture {
+    flex-direction: column;
+    align-items: stretch;
   }
 
   .cityTile {

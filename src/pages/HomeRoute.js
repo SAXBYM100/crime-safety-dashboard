@@ -30,8 +30,8 @@ export default function HomeRoute() {
   const canPreview = useMemo(() => Boolean((location || "").trim()), [location]);
   useEffect(() => {
     setMeta(
-      "Crime & Safety Dashboard - Search tool",
-      "Search by UK postcode or place name to view street-level crimes and 12-month trends."
+      "AreaIQ - Location Intelligence Console",
+      "Generate professional safety and risk briefings for any UK postcode, city, or coordinate."
     );
   }, []);
 
@@ -76,7 +76,7 @@ export default function HomeRoute() {
       setSourcesSummary(getSourcesSummary(profile));
       const label = profile.canonicalName || raw;
       const monthLabel = d ? d : "Latest";
-      setSubtitle(`Safety insights for ${label} • ${monthLabel} • Official UK Police data`);
+      setSubtitle(`Safety insights for ${label} | ${monthLabel} | Official UK Police data`);
       if (profile.safety.errors?.crimes) {
         setError(profile.safety.errors.crimes);
       }
@@ -130,59 +130,88 @@ export default function HomeRoute() {
   }, [locationState.search, date]);
 
   return (
-    <div className="App">
-      <header className="hero">
+    <div className="contentWrap pageShell appShell">
+      <section className="consoleHeaderCard">
         <img
           className="heroImg"
           src={`${process.env.PUBLIC_URL}/brand/area-iq-mark.svg`}
           alt="Area IQ logo"
         />
         <div>
-          <h1>Area IQ — Safety Intelligence</h1>
+          <h1>AreaIQ - Location Intelligence Console</h1>
           <p className="sub">
-            {subtitle || "Enter a postcode, place, or lat,lng to generate a safety snapshot."}
+            Generate professional safety and risk briefings for any UK postcode, city, or coordinate.
           </p>
         </div>
-      </header>
+      </section>
 
-      <div className="form">
-        <input
-          type="text"
-          placeholder="Location (GL50 1AA, Plymouth, or 51.8994,-2.0783)"
-          value={location}
-          onChange={(e) => setLocation(e.target.value)}
-        />
-        <input
-          type="text"
-          placeholder="Month optional (YYYY-MM)"
-          value={date}
-          onChange={(e) => setDate(e.target.value)}
-        />
-        <button onClick={fetchCrimes} disabled={loading}>
-          {loading ? "Loading..." : "Fetch crimes"}
-        </button>
-        <button onClick={openDedicatedPage} disabled={loading || !canPreview}>
-          See full report
-        </button>
-      </div>
+      <section className="consoleCard">
+        <div className="consoleCardHeader">
+          <h2>Build an intelligence brief</h2>
+          <p>{subtitle || "Enter a postcode, place, or lat,lng to generate a safety snapshot."}</p>
+        </div>
 
-      {canPreview && (
-        <p className="hint">
-          Tip: Postcodes like <code>GL50 1AA</code> resolve fastest. Place names use OpenStreetMap geocoding.
-        </p>
-      )}
+        <div className="briefForm">
+          <div className="briefField">
+            <input
+              type="text"
+              placeholder="Location (GL50 1AA, Plymouth, or 51.8994,-2.0783)"
+              value={location}
+              onChange={(e) => setLocation(e.target.value)}
+            />
+          </div>
+          <div className="briefField briefField--month">
+            <input
+              type="text"
+              placeholder="Month optional (YYYY-MM)"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+            />
+          </div>
+          <div className="briefActions">
+            <button onClick={fetchCrimes} disabled={loading} className="primaryButton">
+              {loading ? "Loading..." : "Search"}
+            </button>
+          </div>
+        </div>
 
-      {resolved && (
-        <p className="hint">
-          Resolved to: <b>{resolved.lat.toFixed(6)}</b>, <b>{resolved.lng.toFixed(6)}</b> ({resolved.source})
-        </p>
-      )}
-      {sourcesSummary.sourcesText && (
-        <p className="sourceLine">
-          Last updated: {sourcesSummary.lastUpdated ? new Date(sourcesSummary.lastUpdated).toLocaleDateString() : "Pending"} • Sources:{" "}
-          {sourcesSummary.sourcesText}
-        </p>
-      )}
+        {canPreview && (
+          <p className="hint">
+            Tip: Postcodes like <code>GL50 1AA</code> resolve fastest. Place names use OpenStreetMap geocoding.
+          </p>
+        )}
+
+        {resolved && (
+          <p className="hint">
+            Resolved to: <b>{resolved.lat.toFixed(6)}</b>, <b>{resolved.lng.toFixed(6)}</b> ({resolved.source})
+          </p>
+        )}
+
+        <div className="outputTypeRow">
+          <span className="outputLabel">Output type</span>
+          <div className="outputOptions">
+            <button
+              type="button"
+              className={`outputOption ${canPreview ? "outputOption--active" : "outputOption--muted"}`}
+              onClick={fetchCrimes}
+              disabled={loading || !canPreview}
+            >
+              Quick Brief (Free)
+            </button>
+            <button
+              type="button"
+              className={`outputOption ${canPreview ? "outputOption--active outputOption--action" : "outputOption--muted"}`}
+              onClick={openDedicatedPage}
+              disabled={loading || !canPreview}
+            >
+              View Intelligence Report
+            </button>
+            <button type="button" className="outputOption outputOption--disabled outputOption--muted">
+              Full Intelligence Report <span className="outputBadge">Pro</span>
+            </button>
+          </div>
+        </div>
+      </section>
 
       {resolved && reportLink && !loading && !error && (
         <div style={{ marginBottom: 16 }}>
@@ -256,26 +285,43 @@ export default function HomeRoute() {
         />
       )}
 
-      <p className="note footerLinks">
-        <b>Sources:</b>{" "}
-        <a href="https://data.police.uk/docs/" target="_blank" rel="noreferrer">
-          UK Police API docs
-        </a>{" "}
-        {" | "}
-        <a href="https://data.police.uk/" target="_blank" rel="noreferrer">
-          data.police.uk
-        </a>{" "}
-        {" | "}
-        <a
-          href="https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/"
-          target="_blank"
-          rel="noreferrer"
-        >
-          Open Government Licence v3.0
-        </a>
-        <br />
-        <b>Geocoding:</b> Postcodes.io (postcode lookup) and OpenStreetMap Nominatim (place search)
-      </p>
+      <details className="methodologyPanel">
+        <summary>Methodology &amp; Data Sources</summary>
+        <div className="methodologyBody">
+          {sourcesSummary.sourcesText && (
+            <p className="sourceLine">
+              Last updated:{" "}
+              {sourcesSummary.lastUpdated ? new Date(sourcesSummary.lastUpdated).toLocaleDateString() : "Pending"}{" "}
+              | Sources: {sourcesSummary.sourcesText}
+            </p>
+          )}
+          <p className="note footerLinks">
+            <b>Sources:</b>{" "}
+            <a href="https://data.police.uk/docs/" target="_blank" rel="noreferrer">
+              UK Police API docs
+            </a>{" "}
+            {" | "}
+            <a href="https://data.police.uk/" target="_blank" rel="noreferrer">
+              data.police.uk
+            </a>{" "}
+            {" | "}
+            <a
+              href="https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/"
+              target="_blank"
+              rel="noreferrer"
+            >
+              Open Government Licence v3.0
+            </a>
+            <br />
+            <b>Geocoding:</b> Postcodes.io (postcode lookup) and OpenStreetMap Nominatim (place search)
+          </p>
+        </div>
+      </details>
+
+      <div className="proFooterCta">
+        <span>Need client-ready or investor-grade safety reports? Upgrade to</span>
+        <Link to="/pro">AreaIQ Pro</Link>
+      </div>
     </div>
   );
 }

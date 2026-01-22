@@ -21,8 +21,8 @@ export default function CityIndex() {
 
   useEffect(() => {
     setMeta(
-      "City Guides - Crime & Safety Dashboard",
-      "City guides summarize reporting patterns, livability factors, and links to area reports."
+      "City Intelligence Briefings | AreaIQ",
+      "High-level safety, risk, and neighbourhood context for property, business, and relocation decisions."
     );
   }, []);
 
@@ -65,20 +65,47 @@ export default function CityIndex() {
 
   const heroImage = DEFAULT_HERO;
 
+  const citySummaries = {
+    birmingham: "Commercial corridors, commuter zones, and neighbourhood risk signals in one view.",
+    manchester: "Market movement context for inner-ring, university, and growth districts.",
+    bristol: "Neighbourhood dynamics for coastal access, commuter patterns, and local risk signals.",
+    london: "Borough-level intelligence with pressure points, volatility, and demand cues.",
+  };
+
   return (
-    <div className="contentWrap">
+    <div className="contentWrap pageShell">
       <div className="cityHero" style={{ backgroundImage: `url(${heroImage})` }}>
         <div className="cityHero__content heroIntro">
-          <h1>City guides</h1>
+          <h1>City Intelligence Briefings</h1>
           <p>
-            Browse city-level context, then drill down to postcode-level reports in the dashboard.
+            High-level safety, risk, and neighbourhood context for property, business, and relocation decisions. Drill
+            down into postcode-level intelligence reports.
           </p>
           <div className="heroBadgeRow">
             <span className="heroBadge">City overview</span>
             <span className="heroBadge">Linked area reports</span>
           </div>
+          <div className="heroActions">
+            <Link className="primaryButton" to="/app">
+              Open Intelligence Console
+            </Link>
+            <Link className="ghostButton" to="/pro">
+              Request Pro Access
+            </Link>
+          </div>
         </div>
       </div>
+
+      <section className="sectionBlock contentCard">
+        <h2>Intelligence coverage</h2>
+        <ul className="bulletList">
+          <li>Risk distribution across neighbourhoods</li>
+          <li>Monthly crime movement trends</li>
+          <li>Safer postcode clusters</li>
+          <li>Local volatility signals</li>
+          <li>Data confidence indicators</li>
+        </ul>
+      </section>
 
       <div className="cityTilesGrid">
         {CITY_LIST.map((city) => (
@@ -92,10 +119,10 @@ export default function CityIndex() {
             <div className="cityTile__shade" aria-hidden="true" />
             <div className="cityTile__overlay">
               <h3>{city.name}</h3>
-              <p>Reporting patterns and practical next steps for comparing neighborhoods.</p>
+              <p>{citySummaries[city.slug] || "Neighbourhood risk context and comparative signals for quick decisions."}</p>
               <div className="cityTile__actions">
                 <Link className="btnPrimary" to={`/app?q=${encodeURIComponent(city.name)}`}>
-                  Open in Dashboard
+                  View Intelligence Report
                 </Link>
                 <Link className="btnSecondary" to={`/city/${city.slug}`}>
                   Read guide
@@ -129,7 +156,16 @@ export default function CityIndex() {
       <div className="contentCard">
         <h3>Area reports (generated)</h3>
         <p>Area-level reports are created after searching in the dashboard.</p>
-        <Link className="btnSecondary" to="/app">Go to Dashboard</Link>
+        <Link className="btnSecondary" to="/app">Open Intelligence Console</Link>
+      </div>
+
+      <div className="trustStrip">
+        Powered by official UK Police data • Open methodology • Monthly updates • Independent analysis
+      </div>
+
+      <div className="proFooterCta">
+        <span>Need client-ready or investor-grade safety reports? Upgrade to</span>
+        <Link to="/pro">AreaIQ Pro</Link>
       </div>
 
       <AdSlot slot="1950000001" contentReady />

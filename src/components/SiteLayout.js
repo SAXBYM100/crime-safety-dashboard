@@ -4,8 +4,11 @@ import "../App.css";
 import { Icon } from "@iconify/react";
 import mapPin from "@iconify/icons-lucide/map-pin";
 import building2 from "@iconify/icons-lucide/building-2";
+import fileText from "@iconify/icons-lucide/file-text";
+import shield from "@iconify/icons-lucide/shield";
 import menu from "@iconify/icons-lucide/menu";
 import x from "@iconify/icons-lucide/x";
+import ScrollToTop from "./ScrollToTop";
 
 function NavItem({ to, label, onClick }) {
   return (
@@ -26,6 +29,7 @@ export default function SiteLayout() {
 
   return (
     <div className="layoutShell">
+      <ScrollToTop />
       <header className="siteHeader">
         <div className="siteHeaderInner">
           <Link to="/" className="brand">
@@ -42,8 +46,26 @@ export default function SiteLayout() {
             <Icon icon={menuOpen ? x : menu} />
           </button>
           <nav className={`siteNav ${menuOpen ? "siteNavOpen" : ""}`}>
-            <NavItem to="/dashboard" onClick={() => setMenuOpen(false)} label={<span className="navItem"><Icon icon={mapPin} />Dashboard</span>} />
-            <NavItem to="/city" onClick={() => setMenuOpen(false)} label={<span className="navItem"><Icon icon={building2} />City Guides</span>} />
+            <NavItem
+              to="/city"
+              onClick={() => setMenuOpen(false)}
+              label={<span className="navItem"><Icon icon={mapPin} />Explore</span>}
+            />
+            <NavItem
+              to="/app"
+              onClick={() => setMenuOpen(false)}
+              label={<span className="navItem"><Icon icon={building2} />Intelligence</span>}
+            />
+            <NavItem
+              to="/reports"
+              onClick={() => setMenuOpen(false)}
+              label={<span className="navItem"><Icon icon={fileText} />Reports</span>}
+            />
+            <NavItem
+              to="/pro"
+              onClick={() => setMenuOpen(false)}
+              label={<span className="navItem"><Icon icon={shield} />Pro</span>}
+            />
           </nav>
         </div>
         {menuOpen && <div className="navScrim" onClick={() => setMenuOpen(false)} aria-hidden="true" />}

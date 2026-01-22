@@ -1,58 +1,63 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import { setMeta } from "../seo";
-import { PRO_PLAN } from "../config/pro";
-import { setProAccess, hasProAccess } from "../utils/proAccess";
 
 export default function ProPage() {
-  const [enabled, setEnabled] = useState(false);
-
   useEffect(() => {
     setMeta(
-      "Area IQ Pro | Location intelligence reports",
-      "Unlock unlimited PDF reports and professional insights for property teams."
+      "AreaIQ Pro - Professional Access",
+      "Professional location intelligence for property, risk, investment, consulting, and relocation teams."
     );
-    setEnabled(hasProAccess());
   }, []);
 
   return (
-    <div className="contentWrap">
-      <h1>{PRO_PLAN.name}</h1>
-      <p>
-        Built for property teams, sourcers, and landlords who need credible, shareable area intelligence. Pro unlocks
-        unlimited PDF reports and priority data refreshes.
-      </p>
+    <div className="contentWrap pageShell">
+      <section className="sectionBlock">
+        <h1>AreaIQ Pro - Professional Access</h1>
+        <p className="sub">
+          Professional-grade location intelligence for teams that need fast, defensible decisions.
+        </p>
+      </section>
 
-      <div className="proCard">
-        <div>
-          <h2>{PRO_PLAN.priceMonthly}</h2>
-          <p className="proMuted">Cancel anytime. B2B-lite access.</p>
+      <section className="contentCard sectionBlock">
+        <h2>Who it's for</h2>
+        <ul className="bulletList">
+          <li>Property and development teams</li>
+          <li>Risk and compliance reviews</li>
+          <li>Investment and consulting analysis</li>
+          <li>Relocation and corporate mobility</li>
+        </ul>
+      </section>
+
+      <section className="proCompareGrid">
+        <div className="proCompareCard">
+          <h3>Free</h3>
           <ul className="bulletList">
-            {PRO_PLAN.features.map((feature) => (
-              <li key={feature}>{feature}</li>
-            ))}
+            <li>Search and snapshot views</li>
+            <li>Basic area context</li>
+            <li>Limited exports</li>
           </ul>
         </div>
-        <div className="proActions">
+        <div className="proCompareCard proCompareCard--featured">
+          <h3>Pro</h3>
+          <ul className="bulletList">
+            <li>Branded PDF exports</li>
+            <li>Multi-area comparison</li>
+            <li>Historical trends</li>
+            <li>Shareable client links</li>
+          </ul>
+        </div>
+      </section>
+
+      <section className="contentCard sectionBlock">
+        <h2>Request access</h2>
+        <p className="proMuted">Early access is rolling out to professional teams first.</p>
+        <div className="proCapture">
+          <input type="email" placeholder="Work email" aria-label="Work email" />
           <button type="button" className="primaryButton">
-            Request Pro access
-          </button>
-          <button
-            type="button"
-            className="ghostButton"
-            onClick={() => {
-              const next = !enabled;
-              setProAccess(next);
-              setEnabled(next);
-            }}
-          >
-            {enabled ? "Disable Pro (dev)" : "Enable Pro (dev)"}
+            Request Access
           </button>
         </div>
-      </div>
-
-      <p className="proMuted">
-        The Pro checkout flow is being finalized. This page is a placeholder and can be swapped for Stripe when ready.
-      </p>
+      </section>
     </div>
   );
 }
