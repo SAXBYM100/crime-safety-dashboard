@@ -282,6 +282,21 @@ module.exports = async (req, res) => {
 
     if (lowConfidence || ambiguous) {
       const suggestions = scored.filter(isValidSuggestion).slice(0, 3);
+      const topValid = scored.find(isValidSuggestion);
+      if (!suggestions.length && topValid && topValid.score >= 0.1) {
+        const payload = {
+          lat: topValid.lat,
+          lon: topValid.lon,
+          source: "place",
+          name: topValid.displayName || topValid.name || q,
+          displayName: topValid.displayName || topValid.name || q,
+          adminArea: topValid.adminArea,
+          canonicalSlug: topValid.canonicalSlug,
+        };
+        setCache(cacheKey, payload, CACHE_TTL_MS);
+        res.setHeader("Cache-Control", "public, s-maxage=86400, stale-while-revalidate=172800");
+        return res.json(payload);
+      }
       const payload = {
         ambiguous: true,
         message:

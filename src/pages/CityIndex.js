@@ -142,6 +142,7 @@ export default function CityIndex() {
               <div className="summaryValue">
                 {summary?.ratePer1000 != null ? summary.ratePer1000.toFixed(1) : "—"}
               </div>
+              <div className="summaryMeta">Crimes per 1,000 residents</div>
               <div className="summaryMeta">
                 UK avg: {ukAverageLabel} • Top category:{" "}
                 {summary?.topCategory ? summary.topCategory.replace(/-/g, " ") : "—"}
@@ -172,3 +173,6 @@ export default function CityIndex() {
     </div>
   );
 }
+
+
+

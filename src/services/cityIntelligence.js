@@ -33,6 +33,15 @@ function computeCategoryTotals(rows = []) {
   return totals;
 }
 
+function computeCategoryTotalsFromCrimes(crimes = []) {
+  const totals = {};
+  crimes.forEach((crime) => {
+    const category = crime?.category || "unknown";
+    totals[category] = (totals[category] || 0) + 1;
+  });
+  return totals;
+}
+
 function getTopCategoriesFromTotals(totals, limit = 5) {
   return Object.entries(totals)
     .map(([category, count]) => ({ category, count }))
@@ -97,10 +106,28 @@ function buildMomentumSummary(rows = []) {
 
 export async function fetchCitySummary(city) {
   const trend = await fetchLast12MonthsCountsByCategory(city.lat, city.lng);
-  const totalCrimes = sumTotals(trend.rows);
-  const ratePer1000 = city.population ? (totalCrimes / city.population) * 1000 : null;
-  const categoryTotals = computeCategoryTotals(trend.rows);
-  const topCategory = getTopCategoriesFromTotals(categoryTotals, 1)[0]?.category || "unknown";
+  let totalCrimes = sumTotals(trend.rows);
+  let ratePer1000 = city.population ? (totalCrimes / city.population) * 1000 : null;
+  let categoryTotals = computeCategoryTotals(trend.rows);
+  let topCategory = getTopCategoriesFromTotals(categoryTotals, 1)[0]?.category || "unknown";
+
+  if (!trend.rows?.length || totalCrimes === 0) {
+    const lastMonthKey = toMonthString(getLastFullMonth());
+    const report = await fetchAreaReport({
+      lat: city.lat,
+      lng: city.lng,
+      radius: 1000,
+      from: lastMonthKey,
+      to: lastMonthKey,
+    });
+    const crimes = Array.isArray(report?.crimes) ? report.crimes : [];
+    if (crimes.length) {
+      totalCrimes = crimes.length;
+      ratePer1000 = city.population ? (totalCrimes / city.population) * 1000 : null;
+      categoryTotals = computeCategoryTotalsFromCrimes(crimes);
+      topCategory = getTopCategoriesFromTotals(categoryTotals, 1)[0]?.category || "unknown";
+    }
+  }
   return {
     trend,
     totalCrimes,
