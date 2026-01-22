@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+﻿import React, { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { setMeta } from "../seo";
 import TrendChart from "../components/TrendChart";
@@ -8,12 +8,12 @@ import { fetchCityIntelligence, fetchUkAverageRate } from "../services/cityIntel
 const CITY_LIST = Object.entries(cities).map(([slug, data]) => ({ slug, ...data }));
 
 function formatNumber(value, digits = 0) {
-  if (!Number.isFinite(value)) return "—";
+  if (!Number.isFinite(value)) return "-";
   return value.toLocaleString(undefined, { maximumFractionDigits: digits });
 }
 
 function formatPercent(value, digits = 1) {
-  if (!Number.isFinite(value)) return "—";
+  if (!Number.isFinite(value)) return "-";
   return `${value >= 0 ? "+" : ""}${value.toFixed(digits)}%`;
 }
 
@@ -98,7 +98,7 @@ export default function CityPage() {
         <div className="heroIntro">
           <h1>{city.name} Safety & Crime Intelligence (2026)</h1>
           <p>
-            Verified neighbourhood-level crime data, trends, and local safety context — powered by official UK Police
+            Verified neighbourhood-level crime data, trends, and local safety context - powered by official UK Police
             data.
           </p>
           <div className="heroBadgeRow">
@@ -168,7 +168,7 @@ export default function CityPage() {
                 <div className="impactCard" key={`safe-${area.name}`}>
                   <strong>{area.name}</strong>
                   <div className="impactMeta">
-                    Rate per 1,000: {formatNumber(area.ratePer1000, 2)} • Top category:{" "}
+                    Rate per 1,000: {formatNumber(area.ratePer1000, 2)} - Top category:{" "}
                     {formatCategory(area.topCategory)}
                   </div>
                   {area.center && (
@@ -184,7 +184,7 @@ export default function CityPage() {
                 <div className="impactCard" key={`high-${area.name}`}>
                   <strong>{area.name}</strong>
                   <div className="impactMeta">
-                    Rate per 1,000: {formatNumber(area.ratePer1000, 2)} • Top category:{" "}
+                    Rate per 1,000: {formatNumber(area.ratePer1000, 2)} - Top category:{" "}
                     {formatCategory(area.topCategory)}
                   </div>
                   {area.center && (
@@ -247,7 +247,7 @@ export default function CityPage() {
           </section>
 
           <section className="reportCard">
-            <h2>{city.name} Safety Report — 2026 (PDF)</h2>
+            <h2>{city.name} Safety Report - 2026 (PDF)</h2>
             <ul className="reportList">
               <li>Street-level breakdowns</li>
               <li>Ward rankings</li>
@@ -268,3 +268,4 @@ export default function CityPage() {
     </div>
   );
 }
+
