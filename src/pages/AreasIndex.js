@@ -2,12 +2,9 @@ import React, { useEffect } from "react";
 import { Link } from "react-router-dom";
 import { setMeta } from "../seo";
 import AdSlot from "../components/AdSlot";
+import cities from "../data/cities.json";
 
-const AREAS = [
-  { slug: "london", name: "London" },
-  { slug: "manchester", name: "Manchester" },
-  { slug: "bristol", name: "Bristol" },
-];
+const AREAS = Object.entries(cities).map(([slug, data]) => ({ slug, name: data.name }));
 
 export default function AreasIndex() {
   useEffect(() => {

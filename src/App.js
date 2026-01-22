@@ -23,7 +23,7 @@ import GuideMovingHome from "./pages/guides/GuideMovingHome";
 import AreasIndex from "./pages/AreasIndex";
 import AreaPage from "./pages/areas/AreaPage";
 import CityIndex from "./pages/CityIndex";
-import CityPage from "./pages/city/CityPage";
+import CityPage from "./pages/CityPage";
 
 export default function App() {
   return (
@@ -45,6 +45,9 @@ export default function App() {
           <Route path="/areas/:areaSlug" element={<AreaPage />} />
           <Route path="/city" element={<CityIndex />} />
           <Route path="/city/:citySlug" element={<CityPage />} />
+          <Route path="/is-:citySlug-safe" element={<CityPage />} />
+          <Route path="/:citySlug-crime-rate" element={<CityPage />} />
+          <Route path="/safest-areas-in-:citySlug" element={<CityPage />} />
 
           <Route path="/about" element={<About />} />
           <Route path="/methodology" element={<Methodology />} />

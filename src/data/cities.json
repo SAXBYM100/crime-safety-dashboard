@@ -1,0 +1,23 @@
+{
+  "birmingham": {
+    "name": "Birmingham",
+    "population": 1141816,
+    "policeForce": "west-midlands",
+    "lat": 52.4862,
+    "lng": -1.8904
+  },
+  "manchester": {
+    "name": "Manchester",
+    "population": 547627,
+    "policeForce": "greater-manchester",
+    "lat": 53.4808,
+    "lng": -2.2426
+  },
+  "bristol": {
+    "name": "Bristol",
+    "population": 472500,
+    "policeForce": "avon-and-somerset",
+    "lat": 51.4545,
+    "lng": -2.5879
+  }
+}

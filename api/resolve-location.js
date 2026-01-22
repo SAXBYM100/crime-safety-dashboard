@@ -153,7 +153,7 @@ module.exports = async (req, res) => {
     }
 
     const encoded = encodeURIComponent(q);
-    const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&q=${encoded}`;
+    const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&countrycodes=gb&viewbox=-8.6,60.9,1.8,49.8&bounded=1&q=${encoded}`;
     const results = await fetchJsonOrThrow(url, {
       "User-Agent": "crime-safety-dashboard/1.0 (https://crime-safety-dashboard.vercel.app)",
     });
