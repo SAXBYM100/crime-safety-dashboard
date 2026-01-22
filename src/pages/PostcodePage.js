@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { normalizePostcodeParam } from "../utils/slug";
 import { setMeta } from "../seo";
 import TrendChart from "../components/TrendChart";
@@ -141,6 +141,11 @@ export default function PostcodePage() {
                 {sourcesSummary.sourcesText}
               </p>
             )}
+            <div style={{ marginBottom: 16 }}>
+              <Link to={`/report?kind=postcode&q=${encodeURIComponent(postcode)}`} className="primaryButton">
+                Download Area Report
+              </Link>
+            </div>
 
             {(() => {
               const safety = computeSafetyScore(latestCrimes, trend?.rows || []);

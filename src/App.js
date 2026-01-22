@@ -13,6 +13,7 @@ import Terms from "./pages/Terms";
 import Contact from "./pages/Contact";
 import Methodology from "./pages/Methodology";
 import DataSources from "./pages/DataSources";
+import ReportPage from "./pages/ReportPage";
 import GuidesIndex from "./pages/GuidesIndex";
 import GuideCrimeData from "./pages/guides/GuideCrimeData";
 import GuideSafeTravel from "./pages/guides/GuideSafeTravel";
@@ -49,6 +50,7 @@ export default function App() {
           <Route path="/privacy-policy" element={<PrivacyPolicy />} />
           <Route path="/terms" element={<Terms />} />
           <Route path="/contact" element={<Contact />} />
+          <Route path="/report" element={<ReportPage />} />
 
           <Route path="/privacy" element={<Navigate to="/privacy-policy" replace />} />
           <Route path="/cookies" element={<Navigate to="/privacy-policy" replace />} />
