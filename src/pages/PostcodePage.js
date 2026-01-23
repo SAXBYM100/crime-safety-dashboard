@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useLocation, useParams } from "react-router-dom";
 import { normalizePostcodeParam } from "../utils/slug";
 import { setMeta } from "../seo";
 import TrendChart from "../components/TrendChart";
@@ -10,10 +10,13 @@ import CrimeTable from "../components/CrimeTable";
 import SafetyGauge from "../components/SafetyGauge";
 import { getAreaProfile, getSourcesSummary } from "../data";
 import { pickPrimaryName, toTitleCase } from "../utils/text";
+import { useLoading } from "../context/LoadingContext";
 
 export default function PostcodePage() {
   const params = useParams();
+  const locationState = useLocation();
   const postcode = useMemo(() => normalizePostcodeParam(params.postcode), [params.postcode]);
+  const { beginLoading, trackStart, trackEnd } = useLoading();
 
   const [status, setStatus] = useState("idle");
   const [error, setError] = useState("");
@@ -27,6 +30,7 @@ export default function PostcodePage() {
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [sourcesSummary, setSourcesSummary] = useState({ lastUpdated: null, sourcesText: "" });
   const requestRef = useRef(0);
+  const initialLoadingRequestIdRef = useRef(null);
 
   useEffect(() => {
     setMeta(
@@ -36,8 +40,17 @@ export default function PostcodePage() {
   }, [postcode]);
 
   useEffect(() => {
+    if (locationState.state?.loadingRequestId) {
+      initialLoadingRequestIdRef.current = locationState.state.loadingRequestId;
+    }
+  }, [locationState.state]);
+
+  useEffect(() => {
     async function run() {
       const requestSeq = ++requestRef.current;
+      const pendingRequestId = initialLoadingRequestIdRef.current;
+      if (pendingRequestId) initialLoadingRequestIdRef.current = null;
+      const loadingRequestId = beginLoading("Building intelligence brief", pendingRequestId || undefined);
       setStatus("loading");
       setError("");
       setTrendError("");
@@ -51,7 +64,7 @@ export default function PostcodePage() {
       try {
         const nextProfile = await getAreaProfile(
           { kind: "postcode", value: postcode },
-          { onStatus: setStatusLine }
+          { onStatus: setStatusLine, loading: { requestId: loadingRequestId, trackStart, trackEnd } }
         );
         if (requestSeq !== requestRef.current) return;
         if (nextProfile.geo?.lat != null && nextProfile.geo?.lon != null) {
@@ -73,6 +86,8 @@ export default function PostcodePage() {
         setDisplayName("");
         setStatus("error");
         setStatusLine("");
+      } finally {
+        trackEnd(loadingRequestId);
       }
     }
 

@@ -3,6 +3,8 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import "./App.css";
 
 import SiteLayout from "./components/SiteLayout";
+import GlobalLoadingOverlay from "./components/GlobalLoadingOverlay";
+import { LoadingProvider } from "./context/LoadingContext";
 import HomeRoute from "./pages/HomeRoute";
 import HomePage from "./pages/HomePage";
 import PostcodePage from "./pages/PostcodePage";
@@ -28,7 +30,8 @@ import CityPage from "./pages/CityPage";
 
 export default function App() {
   return (
-    <>
+    <LoadingProvider>
+      <GlobalLoadingOverlay />
       <Routes>
         <Route element={<SiteLayout />}>
           <Route path="/" element={<HomePage />} />
@@ -67,6 +70,6 @@ export default function App() {
 
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
-    </>
+    </LoadingProvider>
   );
 }

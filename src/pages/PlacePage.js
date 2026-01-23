@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { setMeta } from "../seo";
 import TrendChart from "../components/TrendChart";
 import { computeSafetyScore, summarizeTrend, getTopCategories } from "../analytics/safetyScore";
@@ -9,10 +9,13 @@ import CrimeTable from "../components/CrimeTable";
 import SafetyGauge from "../components/SafetyGauge";
 import { getAreaProfile, getSourcesSummary } from "../data";
 import { pickPrimaryName, toTitleCase } from "../utils/text";
+import { useLoading } from "../context/LoadingContext";
 
 export default function PlacePage() {
   const params = useParams();
   const navigate = useNavigate();
+  const locationState = useLocation();
+  const { beginLoading, trackStart, trackEnd } = useLoading();
 
   // Decode and de-slugify (supports old style /place/plymouth and /place/Plymouth)
   const placeName = useMemo(() => {
@@ -33,6 +36,7 @@ export default function PlacePage() {
   const [sourcesSummary, setSourcesSummary] = useState({ lastUpdated: null, sourcesText: "" });
   const [ambiguousCandidates, setAmbiguousCandidates] = useState([]);
   const requestRef = useRef(0);
+  const initialLoadingRequestIdRef = useRef(null);
 
   useEffect(() => {
     setMeta(
@@ -40,6 +44,12 @@ export default function PlacePage() {
       `Explore recent crime statistics in ${placeName}, including offence types, locations, outcomes, and a 12-month crime trend based on official UK police data.`
     );
   }, [placeName]);
+
+  useEffect(() => {
+    if (locationState.state?.loadingRequestId) {
+      initialLoadingRequestIdRef.current = locationState.state.loadingRequestId;
+    }
+  }, [locationState.state]);
 
   function chooseCandidate(candidate) {
     if (!candidate) return;
@@ -51,6 +61,9 @@ export default function PlacePage() {
   useEffect(() => {
     async function run() {
       const requestSeq = ++requestRef.current;
+      const pendingRequestId = initialLoadingRequestIdRef.current;
+      if (pendingRequestId) initialLoadingRequestIdRef.current = null;
+      const loadingRequestId = beginLoading("Building intelligence brief", pendingRequestId || undefined);
       setStatus("loading");
       setError("");
       setTrendError("");
@@ -65,7 +78,7 @@ export default function PlacePage() {
       try {
         const nextProfile = await getAreaProfile(
           { kind: "place", value: placeName },
-          { onStatus: setStatusLine }
+          { onStatus: setStatusLine, loading: { requestId: loadingRequestId, trackStart, trackEnd } }
         );
         if (requestSeq !== requestRef.current) return;
         if (nextProfile.geo?.lat != null && nextProfile.geo?.lon != null) {
@@ -91,6 +104,8 @@ export default function PlacePage() {
         setDisplayName("");
         setStatus("error");
         setStatusLine("");
+      } finally {
+        trackEnd(loadingRequestId);
       }
     }
 

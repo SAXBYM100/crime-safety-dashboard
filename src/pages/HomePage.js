@@ -4,6 +4,7 @@ import { setMeta } from "../seo";
 import AdSlot from "../components/AdSlot";
 import "../App.css";
 import { Icon } from "@iconify/react";
+import { useLoading } from "../context/LoadingContext";
 import search from "@iconify/icons-lucide/search";
 import shieldCheck from "@iconify/icons-lucide/shield-check";
 import scale from "@iconify/icons-lucide/scale";
@@ -16,6 +17,7 @@ import HeroTypeHeadline from "../components/HeroTypeHeadline";
 
 export default function HomePage() {
   const navigate = useNavigate();
+  const { beginLoading } = useLoading();
   const [query, setQuery] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [focused, setFocused] = useState(false);
@@ -45,7 +47,8 @@ export default function HomePage() {
     const trimmed = String(value || "").trim();
     if (!trimmed) return;
     setSubmitting(true);
-    navigate(`/app?q=${encodeURIComponent(trimmed)}`);
+    const loadingRequestId = beginLoading("Loading map data");
+    navigate(`/app?q=${encodeURIComponent(trimmed)}`, { state: { loadingRequestId } });
   }
 
   return (

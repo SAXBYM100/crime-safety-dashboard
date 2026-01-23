@@ -6,10 +6,12 @@ import { geocodeLocation } from "../services/existing";
 import MapAnalyticsPanel from "../components/MapAnalyticsPanel";
 import CrimeTable from "../components/CrimeTable";
 import { getAreaProfile, getSourcesSummary } from "../data";
+import { useLoading } from "../context/LoadingContext";
 
 export default function HomeRoute() {
   const navigate = useNavigate();
   const locationState = useLocation();
+  const { beginLoading, trackStart, trackEnd, cancelLoading } = useLoading();
 
   const [location, setLocation] = useState("");
   const [date, setDate] = useState(""); // YYYY-MM optional
@@ -30,6 +32,7 @@ export default function HomeRoute() {
   const lastQueryRef = useRef("");
   const lastMonthRef = useRef("");
   const activeRequestRef = useRef(0);
+  const initialLoadingRequestIdRef = useRef(null);
 
   const canPreview = useMemo(() => Boolean((location || "").trim()), [location]);
   useEffect(() => {
@@ -41,6 +44,10 @@ export default function HomeRoute() {
 
   async function fetchCrimes(nextLocation = location, nextDate = date) {
     const requestSeq = ++activeRequestRef.current;
+    const pendingRequestId = initialLoadingRequestIdRef.current;
+    if (pendingRequestId) initialLoadingRequestIdRef.current = null;
+    const loadingRequestId = beginLoading("Loading map data", pendingRequestId || undefined);
+    let shouldFinalizeLoading = true;
     setError("");
     setResolved(null);
     setResolvedMeta(null);
@@ -57,6 +64,8 @@ export default function HomeRoute() {
         setLoading(false);
         setError('Date must be YYYY-MM (e.g. "2024-01") or left blank.');
       }
+      cancelLoading(loadingRequestId);
+      shouldFinalizeLoading = false;
       return;
     }
 
@@ -73,11 +82,17 @@ export default function HomeRoute() {
           setError("Enter a location to search.");
           setLoading(false);
         }
+        cancelLoading(loadingRequestId);
+        shouldFinalizeLoading = false;
         return;
       }
       const profile = await getAreaProfile(
         { kind: "auto", value: raw },
-        { dateYYYYMM: d, onStatus: setStatusLine }
+        {
+          dateYYYYMM: d,
+          onStatus: setStatusLine,
+          loading: { requestId: loadingRequestId, trackStart, trackEnd },
+        }
       );
       if (requestSeq !== activeRequestRef.current) return;
       if (profile.geo?.lat != null && profile.geo?.lon != null) {
@@ -111,6 +126,9 @@ export default function HomeRoute() {
         setError("Location could not be resolved.");
       }
     } finally {
+      if (shouldFinalizeLoading) {
+        trackEnd(loadingRequestId);
+      }
       if (requestSeq === activeRequestRef.current) {
         setStatusLine("");
         setLoading(false);
@@ -124,19 +142,27 @@ export default function HomeRoute() {
     const raw = (location || "").trim();
     if (!raw) return;
 
+    const loadingRequestId = beginLoading("Building intelligence brief");
     try {
+      trackStart(loadingRequestId);
       const geo = await geocodeLocation(raw);
+      trackEnd(loadingRequestId);
       if (geo.type === "postcode") {
-        navigate(`/postcode/${encodeURIComponent((geo.displayName || raw).toUpperCase())}`);
+        navigate(`/postcode/${encodeURIComponent((geo.displayName || raw).toUpperCase())}`, {
+          state: { loadingRequestId },
+        });
         return;
       }
       if (geo.type === "place") {
         const slug = geo.canonicalSlug || encodeURIComponent(geo.displayName || raw);
-        navigate(`/place/${slug}`);
+        navigate(`/place/${slug}`, { state: { loadingRequestId } });
         return;
       }
       setError("Dedicated pages currently support postcodes and place names (not lat,lng). Use a postcode or place name.");
+      cancelLoading(loadingRequestId);
     } catch (e) {
+      trackEnd(loadingRequestId);
+      cancelLoading(loadingRequestId);
       if (e?.code === "AMBIGUOUS" && Array.isArray(e.candidates)) {
         setAmbiguousCandidates(e.candidates);
         setError(e.message || "Multiple matches found. Please choose the intended place.");
@@ -167,6 +193,9 @@ export default function HomeRoute() {
     if (q === lastQueryRef.current && m === lastMonthRef.current) return;
     setLocation(q);
     if (m) setDate(m);
+    if (locationState.state?.loadingRequestId) {
+      initialLoadingRequestIdRef.current = locationState.state.loadingRequestId;
+    }
     lastQueryRef.current = q;
     lastMonthRef.current = m;
     fetchCrimes(q, m || date);

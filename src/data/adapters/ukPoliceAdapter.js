@@ -7,11 +7,20 @@ const POSTCODE_SOURCE = DEFAULT_SOURCES[1];
 const OSM_SOURCE = DEFAULT_SOURCES[2];
 
 export async function ukPoliceAdapter(baseProfile, options = {}) {
-  const { onStatus, dateYYYYMM } = options;
+  const { onStatus, dateYYYYMM, loading } = options;
   const { query } = baseProfile;
+  const requestId = loading?.requestId;
+  const trackStart = loading?.trackStart;
+  const trackEnd = loading?.trackEnd;
 
   onStatus?.("Resolving location...");
-  const geo = await geocodeLocation(query.value);
+  if (requestId) trackStart?.(requestId);
+  let geo;
+  try {
+    geo = await geocodeLocation(query.value);
+  } finally {
+    if (requestId) trackEnd?.(requestId);
+  }
 
   const sources = [POLICE_SOURCE];
   if (geo?.type === "place") sources.push(OSM_SOURCE);
@@ -26,20 +35,26 @@ export async function ukPoliceAdapter(baseProfile, options = {}) {
 
   onStatus?.("Fetching latest crimes...");
   try {
+    if (requestId) trackStart?.(requestId);
     const crimesResult = await fetchCrimesForLocation(geo.lat, geo.lng, dateYYYYMM || "");
     if (Array.isArray(crimesResult)) {
       safety.latestCrimes = crimesResult;
     }
   } catch (err) {
     safety.errors.crimes = "Latest crime data is temporarily unavailable.";
+  } finally {
+    if (requestId) trackEnd?.(requestId);
   }
 
   onStatus?.("Analyzing trends...");
   try {
+    if (requestId) trackStart?.(requestId);
     const trend = await fetchLast12MonthsCountsByCategory(geo.lat, geo.lng);
     safety.trend = trend || { rows: [] };
   } catch (err) {
     safety.errors.trend = "Trend data is temporarily unavailable.";
+  } finally {
+    if (requestId) trackEnd?.(requestId);
   }
 
   return {
