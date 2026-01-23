@@ -33,6 +33,11 @@ export default function PlacePage() {
   const [sourcesSummary, setSourcesSummary] = useState({ lastUpdated: null, sourcesText: "" });
   const [ambiguousCandidates, setAmbiguousCandidates] = useState([]);
 
+  function openPdfBrief() {
+    const base = window.location.pathname.replace(/\/pdf$/, "");
+    window.open(`${base}/pdf`, "_blank", "noopener,noreferrer");
+  }
+
   useEffect(() => {
     setMeta(
       `${placeName} Crime Rate & Statistics (Updated Monthly) | Crime & Safety`,
@@ -190,9 +195,14 @@ export default function PlacePage() {
               </p>
             )}
             <div style={{ marginBottom: 16 }}>
-              <Link to={`/report?kind=place&q=${encodeURIComponent(placeName)}`} className="primaryButton">
-                Download Area Report
-              </Link>
+              <div className="briefActions">
+                <Link to={`/report?kind=place&q=${encodeURIComponent(placeName)}`} className="primaryButton">
+                  Download Area Report
+                </Link>
+                <button type="button" className="ghostButton" onClick={openPdfBrief}>
+                  Print / Save PDF
+                </button>
+              </div>
             </div>
 
             {(() => {

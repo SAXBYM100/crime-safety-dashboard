@@ -157,6 +157,14 @@ function buildCandidate(item) {
   const displayName = name && adminArea ? `${name}, ${adminArea}` : item.display_name || name;
   const canonicalSlug = slugify(`${name}-${adminArea}`);
   const query = displayName || item.display_name || name;
+  const inferredAddressType =
+    item.addresstype ||
+    (address.city ? "city" : "") ||
+    (address.town ? "town" : "") ||
+    (address.village ? "village" : "") ||
+    (address.county ? "county" : "") ||
+    (address.state_district ? "state_district" : "");
+
   return {
     name,
     displayName,
@@ -167,7 +175,7 @@ function buildCandidate(item) {
     importance: Number(item.importance || 0),
     type: item.type || "",
     class: item.class || "",
-    addresstype: item.addresstype || "",
+    addresstype: inferredAddressType || "",
     query,
   };
 }

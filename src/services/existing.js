@@ -60,6 +60,21 @@ function parseCoordinateToken(token, kind) {
   return value;
 }
 
+function coerceQueryText(input) {
+  if (typeof input === "string") return input;
+  if (input && typeof input === "object") {
+    return (
+      input.value ||
+      input.query ||
+      input.label ||
+      input.name ||
+      input.text ||
+      ""
+    );
+  }
+  return String(input || "");
+}
+
 async function fetchJsonOrThrow(url) {
   const res = await fetch(url, { headers: { Accept: "application/json" } });
   if (!res.ok) {
@@ -75,8 +90,13 @@ async function fetchJsonOrThrow(url) {
 }
 
 export async function geocodeLocation(query) {
-  const q = (query || "").trim();
-  if (!q) throw new Error("Enter a location (postcode, place name, or lat,lng).");
+  const q = coerceQueryText(query).trim();
+  if (!q) {
+    if (process.env.NODE_ENV !== "production") {
+      console.error("[geocodeLocation] Invalid query input", query);
+    }
+    throw new Error("Enter a location (postcode, place name, or lat,lng).");
+  }
 
   if (isLikelyLatLngPair(q)) {
     const [a, b] = q.split(",").map((s) => s.trim());

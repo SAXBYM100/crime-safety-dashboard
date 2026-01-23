@@ -7,6 +7,7 @@ import HomeRoute from "./pages/HomeRoute";
 import HomePage from "./pages/HomePage";
 import PostcodePage from "./pages/PostcodePage";
 import PlacePage from "./pages/PlacePage";
+import PdfBriefPage from "./pages/PdfBriefPage";
 import About from "./pages/About";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import Terms from "./pages/Terms";
@@ -30,6 +31,8 @@ export default function App() {
   return (
     <>
       <Routes>
+        <Route path="/place/:placeName/pdf" element={<PdfBriefPage kind="place" />} />
+        <Route path="/postcode/:postcode/pdf" element={<PdfBriefPage kind="postcode" />} />
         <Route element={<SiteLayout />}>
           <Route path="/" element={<HomePage />} />
           <Route path="/app" element={<HomeRoute />} />

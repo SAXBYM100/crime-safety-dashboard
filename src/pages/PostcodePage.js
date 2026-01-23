@@ -9,7 +9,6 @@ import MapAnalyticsPanel from "../components/MapAnalyticsPanel";
 import CrimeTable from "../components/CrimeTable";
 import SafetyGauge from "../components/SafetyGauge";
 import { getAreaProfile, getSourcesSummary } from "../data";
-import { pickPrimaryName, toTitleCase } from "../utils/text";
 
 export default function PostcodePage() {
   const params = useParams();
@@ -26,6 +25,11 @@ export default function PostcodePage() {
   const [trend, setTrend] = useState(null);
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [sourcesSummary, setSourcesSummary] = useState({ lastUpdated: null, sourcesText: "" });
+
+  function openPdfBrief() {
+    const base = window.location.pathname.replace(/\/pdf$/, "");
+    window.open(`${base}/pdf`, "_blank", "noopener,noreferrer");
+  }
 
   useEffect(() => {
     setMeta(
@@ -57,9 +61,10 @@ export default function PostcodePage() {
         if (nextProfile.geo?.lat != null && nextProfile.geo?.lon != null) {
           setResolved({ lat: nextProfile.geo.lat, lng: nextProfile.geo.lon });
         }
-        const preferredName = nextProfile.adminArea || nextProfile.displayName || nextProfile.canonicalName;
-        const primaryName = pickPrimaryName(preferredName);
-        setDisplayName(toTitleCase(primaryName));
+        const normalized = normalizePostcodeParam(
+          nextProfile.displayName || nextProfile.canonicalName || postcode
+        );
+        setDisplayName(normalized);
         setLatestCrimes(nextProfile.safety.latestCrimes || []);
         setTrend(nextProfile.safety.trend || null);
         setCrimesError(nextProfile.safety.errors?.crimes || "");
@@ -150,9 +155,14 @@ export default function PostcodePage() {
               </p>
             )}
             <div style={{ marginBottom: 16 }}>
-              <Link to={`/report?kind=postcode&q=${encodeURIComponent(postcode)}`} className="primaryButton">
-                Download Area Report
-              </Link>
+              <div className="briefActions">
+                <Link to={`/report?kind=postcode&q=${encodeURIComponent(postcode)}`} className="primaryButton">
+                  Download Area Report
+                </Link>
+                <button type="button" className="ghostButton" onClick={openPdfBrief}>
+                  Print / Save PDF
+                </button>
+              </div>
             </div>
 
             {(() => {

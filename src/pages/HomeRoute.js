@@ -28,6 +28,7 @@ export default function HomeRoute() {
   const lastGeoMs = useRef(0);
   const lastQueryRef = useRef("");
   const lastMonthRef = useRef("");
+  const searchIdRef = useRef(0);
 
   const canPreview = useMemo(() => Boolean((location || "").trim()), [location]);
   useEffect(() => {
@@ -38,6 +39,8 @@ export default function HomeRoute() {
   }, []);
 
   async function fetchCrimes(nextLocation = location, nextDate = date) {
+    const searchId = searchIdRef.current + 1;
+    searchIdRef.current = searchId;
     setError("");
     setResolved(null);
     setLoading(true);
@@ -45,6 +48,9 @@ export default function HomeRoute() {
     setStatusLine("Resolving location...");
     setCategoryFilter("all");
     setAmbiguousCandidates([]);
+    setSourcesSummary({ lastUpdated: null, sourcesText: "" });
+    setSubtitle("");
+    setCanonicalSlug("");
 
     const d = String(nextDate || "").trim();
     if (d && !/^\d{4}-\d{2}$/.test(d)) {
@@ -72,6 +78,7 @@ export default function HomeRoute() {
         { kind: queryKind, value: raw },
         { dateYYYYMM: d, onStatus: setStatusLine }
       );
+      if (searchId !== searchIdRef.current) return;
       if (profile.geo?.lat != null && profile.geo?.lon != null) {
         setResolved({ lat: profile.geo.lat, lng: profile.geo.lon, source: profile.query.kind });
       }
@@ -87,6 +94,7 @@ export default function HomeRoute() {
         setError(profile.safety.errors.crimes);
       }
     } catch (e) {
+      if (searchId !== searchIdRef.current) return;
       if (e?.code === "AMBIGUOUS" && Array.isArray(e.candidates)) {
         setAmbiguousCandidates(e.candidates);
         setError(e.message || "Multiple matches found. Please choose the intended place.");
@@ -94,8 +102,10 @@ export default function HomeRoute() {
         setError(e.message || "Something went wrong.");
       }
     } finally {
-      setStatusLine("");
-      setLoading(false);
+      if (searchId === searchIdRef.current) {
+        setStatusLine("");
+        setLoading(false);
+      }
     }
   }
 

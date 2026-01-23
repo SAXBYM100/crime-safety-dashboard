@@ -1,0 +1,236 @@
+.pdfBrief {
+  background: #ffffff;
+  color: #0f172a;
+  min-height: 100vh;
+  padding: 32px 16px 48px;
+}
+
+.pdfToolbar {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  max-width: 980px;
+  margin: 0 auto 16px;
+}
+
+.pdfHeader,
+.pdfFooter {
+  max-width: 980px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.9rem;
+  color: #475569;
+}
+
+.pdfHeader {
+  padding-bottom: 12px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.pdfFooter {
+  padding-top: 12px;
+  border-top: 1px solid #e2e8f0;
+  margin-top: 16px;
+}
+
+.pdfBrand {
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  color: #0f766e;
+}
+
+.pdfHeaderMeta {
+  text-align: right;
+}
+
+.pdfPage {
+  max-width: 980px;
+  margin: 24px auto 0;
+}
+
+.pdfCover h1 {
+  font-size: 2.2rem;
+  margin: 12px 0 8px;
+}
+
+.pdfKicker {
+  text-transform: uppercase;
+  font-size: 0.8rem;
+  letter-spacing: 0.2em;
+  color: #0f766e;
+}
+
+.pdfLocation {
+  font-size: 1.05rem;
+  color: #475569;
+}
+
+.pdfMetaGrid {
+  margin-top: 16px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 14px 16px;
+}
+
+.pdfMetaLabel {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: #64748b;
+}
+
+.pdfMetaValue {
+  margin-top: 4px;
+  font-weight: 600;
+}
+
+.pdfSection {
+  margin-top: 28px;
+}
+
+.pdfSection h2 {
+  margin-bottom: 8px;
+  color: #0f766e;
+}
+
+.pdfSummaryBand {
+  background: #f1f5f9;
+  border-left: 4px solid #0f766e;
+  padding: 10px 14px;
+  margin: 12px 0;
+  font-weight: 600;
+}
+
+.pdfSignals {
+  margin-top: 16px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+}
+
+.pdfSignalLabel {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: #64748b;
+}
+
+.pdfSignalValue {
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.pdfGaugeRow {
+  display: grid;
+  grid-template-columns: minmax(140px, 220px) 1fr;
+  gap: 20px;
+  align-items: center;
+}
+
+.pdfNote {
+  color: #475569;
+  line-height: 1.6;
+}
+
+.pdfTable {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 12px;
+  font-size: 0.95rem;
+}
+
+.pdfTable th,
+.pdfTable td {
+  text-align: left;
+  padding: 8px 10px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.pdfTable tbody tr:nth-child(odd) {
+  background: #f8fafc;
+}
+
+.pdfTable--compact {
+  margin-top: 16px;
+  font-size: 0.9rem;
+}
+
+.pdfCaption {
+  font-size: 0.85rem;
+  color: #64748b;
+  margin-bottom: 8px;
+}
+
+.pdfGridTwo {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.pdfList {
+  margin: 8px 0 12px 18px;
+}
+
+.pdfDisclaimer {
+  font-size: 0.85rem;
+  color: #64748b;
+}
+
+.pdfError {
+  color: #b91c1c;
+  font-weight: 600;
+}
+
+.pdfLink {
+  color: #0f766e;
+}
+
+.pageBreak {
+  break-before: page;
+  page-break-before: always;
+}
+
+@media print {
+  @page {
+    margin: 20mm;
+  }
+
+  body {
+    background: #ffffff;
+    color: #0f172a;
+  }
+
+  .pdfToolbar {
+    display: none;
+  }
+
+  .pdfHeader,
+  .pdfFooter {
+    position: fixed;
+    left: 0;
+    right: 0;
+  }
+
+  .pdfHeader {
+    top: 0;
+  }
+
+  .pdfFooter {
+    bottom: 0;
+  }
+
+  .pdfPage {
+    margin-top: 80px;
+    margin-bottom: 80px;
+  }
+}
+
+@media (max-width: 720px) {
+  .pdfGaugeRow {
+    grid-template-columns: 1fr;
+  }
+}
