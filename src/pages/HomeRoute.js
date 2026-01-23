@@ -96,8 +96,11 @@ export default function HomeRoute() {
       const label = profile.canonicalName || raw;
       const monthLabel = d ? d : "Latest";
       setSubtitle(`Safety insights for ${label} | ${monthLabel} | Official UK Police data`);
-      if (profile.safety.errors?.crimes) {
-        setError(profile.safety.errors.crimes);
+      const hasReportError = Boolean(profile.safety.errors?.crimes || profile.safety.errors?.trend);
+      if (hasReportError) {
+        setError("Report data unavailable right now.");
+      } else {
+        setError("");
       }
     } catch (e) {
       if (requestSeq !== activeRequestRef.current) return;
@@ -105,7 +108,7 @@ export default function HomeRoute() {
         setAmbiguousCandidates(e.candidates);
         setError(e.message || "Multiple matches found. Please choose the intended place.");
       } else {
-        setError(e.message || "Something went wrong.");
+        setError("Location could not be resolved.");
       }
     } finally {
       if (requestSeq === activeRequestRef.current) {
