@@ -5,7 +5,7 @@ import { setMeta } from "../seo";
 export default function ReportsPage() {
   useEffect(() => {
     setMeta(
-      "AreaIQ Reports - Client-Ready Location Intelligence",
+      "Area IQ Reports - Client-Ready Location Intelligence",
       "Generate branded PDF briefings, multi-area comparisons, and shareable intelligence reports for UK locations."
     );
   }, []);
@@ -13,7 +13,7 @@ export default function ReportsPage() {
   return (
     <div className="contentWrap pageShell">
       <section className="sectionBlock">
-        <h1>AreaIQ Reports - Client-Ready Location Intelligence</h1>
+        <h1>Area IQ Reports - Client-Ready Location Intelligence</h1>
         <p className="sub">
           Shareable briefings and export-ready intelligence for property, risk, and relocation teams.
         </p>
@@ -35,3 +35,4 @@ export default function ReportsPage() {
     </div>
   );
 }
+

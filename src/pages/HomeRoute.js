@@ -32,7 +32,7 @@ export default function HomeRoute() {
   const canPreview = useMemo(() => Boolean((location || "").trim()), [location]);
   useEffect(() => {
     setMeta(
-      "AreaIQ - Location Intelligence Console",
+      "Area IQ - Location Intelligence Console",
       "Generate professional safety and risk briefings for any UK postcode, city, or coordinate."
     );
   }, []);
@@ -168,7 +168,7 @@ export default function HomeRoute() {
           alt="Area IQ logo"
         />
         <div>
-          <h1>AreaIQ - Location Intelligence Console</h1>
+          <h1>Area IQ - Location Intelligence Console</h1>
           <p className="sub">
             Generate professional safety and risk briefings for any UK postcode, city, or coordinate.
           </p>
@@ -368,9 +368,10 @@ export default function HomeRoute() {
 
       <div className="proFooterCta">
         <span>Need client-ready or investor-grade safety reports? Upgrade to</span>
-        <Link to="/pro">AreaIQ Pro</Link>
+        <Link to="/pro">Area IQ Pro</Link>
       </div>
     </div>
   );
 }
+
 

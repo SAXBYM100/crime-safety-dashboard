@@ -21,7 +21,7 @@ export default function CityIndex() {
 
   useEffect(() => {
     setMeta(
-      "City Intelligence Briefings | AreaIQ",
+      "City Intelligence Briefings | Area IQ",
       "High-level safety, risk, and neighbourhood context for property, business, and relocation decisions."
     );
   }, []);
@@ -166,13 +166,14 @@ export default function CityIndex() {
 
       <div className="proFooterCta">
         <span>Need client-ready or investor-grade safety reports? Upgrade to</span>
-        <Link to="/pro">AreaIQ Pro</Link>
+        <Link to="/pro">Area IQ Pro</Link>
       </div>
 
       <AdSlot slot="1950000001" contentReady />
     </div>
   );
 }
+
 
 
 

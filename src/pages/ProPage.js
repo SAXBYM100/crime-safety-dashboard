@@ -4,7 +4,7 @@ import { setMeta } from "../seo";
 export default function ProPage() {
   useEffect(() => {
     setMeta(
-      "AreaIQ Pro - Professional Access",
+      "Area IQ Pro - Professional Access",
       "Professional location intelligence for property, risk, investment, consulting, and relocation teams."
     );
   }, []);
@@ -12,7 +12,7 @@ export default function ProPage() {
   return (
     <div className="contentWrap pageShell">
       <section className="sectionBlock">
-        <h1>AreaIQ Pro - Professional Access</h1>
+        <h1>Area IQ Pro - Professional Access</h1>
         <p className="sub">
           Professional-grade location intelligence for teams that need fast, defensible decisions.
         </p>
@@ -61,3 +61,4 @@ export default function ProPage() {
     </div>
   );
 }
+
