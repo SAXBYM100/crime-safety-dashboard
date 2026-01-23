@@ -2370,6 +2370,10 @@ th {
     flex: 1 1 220px;
     min-width: 0;
     flex-wrap: wrap;
+    height: auto;
+    min-height: 0;
+    justify-content: flex-start;
+    gap: 12px;
   }
 
   .homeSearchShell input {
@@ -2377,6 +2381,9 @@ th {
     font-size: 0.98rem;
     min-width: 0;
     flex: 1 1 220px;
+    min-height: 48px;
+    padding: 0 14px;
+    line-height: 48px;
   }
 
   .homeSearchButton {
@@ -2386,6 +2393,8 @@ th {
     flex: 1 1 160px;
     min-width: 140px;
     white-space: nowrap;
+    width: 100%;
+    border-radius: 14px;
   }
 
   .homeChips {
