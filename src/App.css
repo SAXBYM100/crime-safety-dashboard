@@ -2270,7 +2270,7 @@ th {
   }
 
   .cityTile {
-    min-height: 190px;
+    min-height: 230px;
   }
 
   :root {
@@ -2317,7 +2317,10 @@ th {
   }
 
   .cityTile__overlay {
-    gap: 8px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    gap: 10px;
     padding: 14px;
     padding-bottom: 16px;
   }
@@ -2325,7 +2328,7 @@ th {
   .cityTile__actions {
     margin-top: 6px;
     flex-direction: column;
-    gap: 8px;
+    gap: 10px;
   }
 
   .btnPrimary,
@@ -2340,8 +2343,9 @@ th {
 
   .homeHeroContent h1 {
     font-size: clamp(1.7rem, 7.2vw, 2.6rem);
-    line-height: 1.08;
+    line-height: 1.05;
     margin-bottom: 10px;
+    overflow-wrap: anywhere;
   }
 
   .heroTextWrap {
@@ -2354,27 +2358,40 @@ th {
 
   .homeSearchShell {
     padding: 4px 8px 4px 12px;
+    flex: 1 1 220px;
+    min-width: 0;
+    flex-wrap: wrap;
   }
 
   .homeSearchShell input {
     height: 48px;
     font-size: 0.98rem;
+    min-width: 0;
+    flex: 1 1 220px;
   }
 
   .homeSearchButton {
     height: 48px;
     padding: 0 14px;
     font-size: 0.96rem;
+    flex: 1 1 160px;
+    min-width: 140px;
+    white-space: nowrap;
   }
 
   .homeChips {
     gap: 6px;
     margin-top: 10px;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    -webkit-overflow-scrolling: touch;
+    max-width: 100%;
   }
 
   .chipButton {
     font-size: 0.86rem;
     padding: 5px 12px;
+    flex: 0 0 auto;
   }
 
   .heroBadgeRow {
@@ -2398,6 +2415,15 @@ th {
 }
 
 @media (max-width: 640px) and (max-height: 700px) {
+  .homeHero {
+    min-height: 420px;
+  }
+
+  .homeHeroContent {
+    padding-top: 12px;
+    padding-bottom: 12px;
+  }
+
   .consoleHeaderCard {
     padding-top: 8px;
     padding-bottom: 8px;
@@ -2410,6 +2436,15 @@ th {
 
   .consoleCardHeader h2 {
     font-size: 1.15rem;
+  }
+
+  .cityTile__overlay {
+    padding: 10px;
+    gap: 8px;
+  }
+
+  .cityTile {
+    min-height: 230px;
   }
 }
 
