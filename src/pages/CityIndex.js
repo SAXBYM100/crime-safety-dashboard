@@ -120,6 +120,9 @@ export default function CityIndex() {
             <div className="cityTile__overlay">
               <h3>{city.name}</h3>
               <p>{citySummaries[city.slug] || "Neighbourhood risk context and comparative signals for quick decisions."}</p>
+              <div className="cityTile__meta">
+                <span className="cityTile__note">Data reflects latest available UK Police reporting period.</span>
+              </div>
               <div className="cityTile__actions">
                 <Link className="btnPrimary" to={`/app?q=${encodeURIComponent(city.name)}`}>
                   View Intelligence Report
