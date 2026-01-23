@@ -2366,39 +2366,34 @@ th {
   }
 
   .homeSearchShell {
-    padding: 4px 8px 4px 12px;
-    flex: 1 1 220px;
-    min-width: 0;
-    flex-wrap: nowrap;
-    height: auto;
+    padding: 12px 14px;
     min-height: 0;
-    justify-content: flex-start;
-    gap: 12px;
+    height: auto;
     width: 100%;
     max-width: 100%;
-    overflow: visible;
     box-sizing: border-box;
-    align-items: center;
+    overflow: visible;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
   }
 
   .homeSearchShell input {
-    height: 52px;
+    height: 48px;
     font-size: 0.98rem;
     min-width: 0;
-    flex: 1 1 auto;
-    min-height: 52px;
+    min-height: 48px;
     padding: 0 14px;
-    line-height: 52px;
+    line-height: 48px;
+    width: 100%;
   }
 
   .homeSearchButton {
-    height: 52px;
+    height: 48px;
     padding: 0 16px;
     font-size: 0.96rem;
-    flex: 0 0 auto;
-    min-width: 0;
     white-space: nowrap;
-    width: auto;
+    width: 100%;
     border-radius: 14px;
   }
 
@@ -2434,6 +2429,17 @@ th {
   .heroBadge svg {
     width: 14px;
     height: 14px;
+  }
+}
+
+@media (min-width: 361px) and (max-width: 640px) {
+  .homeSearchShell {
+    grid-template-columns: 1fr auto;
+    align-items: center;
+  }
+
+  .homeSearchButton {
+    width: auto;
   }
 }
 
