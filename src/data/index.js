@@ -8,12 +8,12 @@ import { deprivationAdapter } from "./adapters/deprivationAdapter";
 
 function normalizeQuery(input) {
   if (!input) {
-    return { kind: "place", value: "" };
+    return { kind: "auto", value: "" };
   }
   if (typeof input === "string") {
-    return { kind: "place", value: input };
+    return { kind: "auto", value: input };
   }
-  return { kind: input.kind || "place", value: input.value || "" };
+  return { kind: input.kind || "auto", value: input.value || "" };
 }
 
 export async function getAreaProfile(queryInput, options = {}) {

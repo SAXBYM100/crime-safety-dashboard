@@ -14,9 +14,9 @@ export async function ukPoliceAdapter(baseProfile, options = {}) {
   const geo = await geocodeLocation(query.value);
 
   const sources = [POLICE_SOURCE];
-  if (geo?.source === "place" || geo?.source === "lookup") sources.push(OSM_SOURCE);
-  if (geo?.source === "manual") sources.push({ name: "Manual coordinates" });
-  if (geo?.source === "postcode") sources.push(POSTCODE_SOURCE);
+  if (geo?.type === "place") sources.push(OSM_SOURCE);
+  if (geo?.type === "latlng") sources.push({ name: "Manual coordinates" });
+  if (geo?.type === "postcode") sources.push(POSTCODE_SOURCE);
 
   const safety = {
     latestCrimes: [],
@@ -43,10 +43,13 @@ export async function ukPoliceAdapter(baseProfile, options = {}) {
   }
 
   return {
-    canonicalName: geo.displayName || geo.name || baseProfile.canonicalName,
-    displayName: geo.displayName || geo.name || baseProfile.displayName,
+    query: { ...baseProfile.query, kind: geo.type || baseProfile.query.kind, value: geo.inputNormalized || query.value },
+    canonicalName: geo.displayName || baseProfile.canonicalName,
+    displayName: geo.displayName || baseProfile.displayName,
     adminArea: geo.adminArea || baseProfile.adminArea,
     canonicalSlug: geo.canonicalSlug || baseProfile.canonicalSlug,
+    inputNormalized: geo.inputNormalized || query.value,
+    requestId: geo.requestId,
     geo: { lat: geo.lat, lon: geo.lng },
     safety,
     sources,

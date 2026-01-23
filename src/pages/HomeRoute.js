@@ -2,7 +2,7 @@ import React, { useMemo, useRef, useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import "../App.css";
 import { setMeta } from "../seo";
-import { classifyQueryType, geocodeLocation } from "../services/existing";
+import { geocodeLocation } from "../services/existing";
 import MapAnalyticsPanel from "../components/MapAnalyticsPanel";
 import CrimeTable from "../components/CrimeTable";
 import { getAreaProfile, getSourcesSummary } from "../data";
@@ -23,11 +23,13 @@ export default function HomeRoute() {
   const [subtitle, setSubtitle] = useState("");
   const [ambiguousCandidates, setAmbiguousCandidates] = useState([]);
   const [canonicalSlug, setCanonicalSlug] = useState("");
+  const [resolvedMeta, setResolvedMeta] = useState(null);
 
   // simple throttle for geocoding calls (helps avoid rapid repeat clicks)
   const lastGeoMs = useRef(0);
   const lastQueryRef = useRef("");
   const lastMonthRef = useRef("");
+  const activeRequestRef = useRef(0);
 
   const canPreview = useMemo(() => Boolean((location || "").trim()), [location]);
   useEffect(() => {
@@ -38,18 +40,23 @@ export default function HomeRoute() {
   }, []);
 
   async function fetchCrimes(nextLocation = location, nextDate = date) {
+    const requestSeq = ++activeRequestRef.current;
     setError("");
     setResolved(null);
+    setResolvedMeta(null);
     setLoading(true);
     setData([]);
     setStatusLine("Resolving location...");
     setCategoryFilter("all");
     setAmbiguousCandidates([]);
+    setCanonicalSlug("");
 
     const d = String(nextDate || "").trim();
     if (d && !/^\d{4}-\d{2}$/.test(d)) {
-      setLoading(false);
-      setError('Date must be YYYY-MM (e.g. "2024-01") or left blank.');
+      if (requestSeq === activeRequestRef.current) {
+        setLoading(false);
+        setError('Date must be YYYY-MM (e.g. "2024-01") or left blank.');
+      }
       return;
     }
 
@@ -61,23 +68,29 @@ export default function HomeRoute() {
       lastGeoMs.current = Date.now();
 
       const raw = String(nextLocation || "").trim();
-      const kind = classifyQueryType(raw).kind;
-      if (kind === "empty") {
-        setError("Enter a location to search.");
-        setLoading(false);
+      if (!raw) {
+        if (requestSeq === activeRequestRef.current) {
+          setError("Enter a location to search.");
+          setLoading(false);
+        }
         return;
       }
-      const queryKind = kind === "latlng" ? "latlng" : kind === "postcode" ? "postcode" : "place";
       const profile = await getAreaProfile(
-        { kind: queryKind, value: raw },
+        { kind: "auto", value: raw },
         { dateYYYYMM: d, onStatus: setStatusLine }
       );
+      if (requestSeq !== activeRequestRef.current) return;
       if (profile.geo?.lat != null && profile.geo?.lon != null) {
         setResolved({ lat: profile.geo.lat, lng: profile.geo.lon, source: profile.query.kind });
       }
       if (profile.canonicalSlug) {
         setCanonicalSlug(profile.canonicalSlug);
       }
+      setResolvedMeta({
+        type: profile.query.kind,
+        queryValue: profile.displayName || profile.canonicalName || raw,
+        canonicalSlug: profile.canonicalSlug,
+      });
       setData(Array.isArray(profile.safety.latestCrimes) ? profile.safety.latestCrimes : []);
       setSourcesSummary(getSourcesSummary(profile));
       const label = profile.canonicalName || raw;
@@ -87,6 +100,7 @@ export default function HomeRoute() {
         setError(profile.safety.errors.crimes);
       }
     } catch (e) {
+      if (requestSeq !== activeRequestRef.current) return;
       if (e?.code === "AMBIGUOUS" && Array.isArray(e.candidates)) {
         setAmbiguousCandidates(e.candidates);
         setError(e.message || "Multiple matches found. Please choose the intended place.");
@@ -94,49 +108,45 @@ export default function HomeRoute() {
         setError(e.message || "Something went wrong.");
       }
     } finally {
-      setStatusLine("");
-      setLoading(false);
+      if (requestSeq === activeRequestRef.current) {
+        setStatusLine("");
+        setLoading(false);
+      }
     }
   }
 
   async function openDedicatedPage() {
     setError("");
+    setAmbiguousCandidates([]);
     const raw = (location || "").trim();
     if (!raw) return;
 
-    const k = classifyQueryType(raw).kind; // recompute from trimmed input
-
-    if (k === "postcode") {
-      navigate(`/postcode/${encodeURIComponent(raw.toUpperCase())}`);
-      return;
-    }
-
-    if (k === "place") {
-      try {
-        const geo = await geocodeLocation(raw);
-        const slug = geo.canonicalSlug || encodeURIComponent(raw);
-        navigate(`/place/${slug}`);
-      } catch (e) {
-        if (e?.code === "AMBIGUOUS" && Array.isArray(e.candidates)) {
-          setAmbiguousCandidates(e.candidates);
-          setError(e.message || "Multiple matches found. Please choose the intended place.");
-        } else {
-          setError(e.message || "Unable to resolve that place.");
-        }
+    try {
+      const geo = await geocodeLocation(raw);
+      if (geo.type === "postcode") {
+        navigate(`/postcode/${encodeURIComponent((geo.displayName || raw).toUpperCase())}`);
+        return;
       }
-      return;
+      if (geo.type === "place") {
+        const slug = geo.canonicalSlug || encodeURIComponent(geo.displayName || raw);
+        navigate(`/place/${slug}`);
+        return;
+      }
+      setError("Dedicated pages currently support postcodes and place names (not lat,lng). Use a postcode or place name.");
+    } catch (e) {
+      if (e?.code === "AMBIGUOUS" && Array.isArray(e.candidates)) {
+        setAmbiguousCandidates(e.candidates);
+        setError(e.message || "Multiple matches found. Please choose the intended place.");
+      } else {
+        setError(e.message || "Unable to resolve that place.");
+      }
     }
-
-    setError("Dedicated pages currently support postcodes and place names (not lat,lng). Use a postcode or place name.");
   }
 
   const reportLink = useMemo(() => {
-    const raw = (location || "").trim();
-    if (!raw) return "";
-    const kind = classifyQueryType(raw).kind;
-    const queryKind = kind === "latlng" ? "latlng" : kind === "postcode" ? "postcode" : "place";
-    return `/report?kind=${encodeURIComponent(queryKind)}&q=${encodeURIComponent(raw)}`;
-  }, [location]);
+    if (!resolvedMeta?.queryValue || !resolvedMeta?.type) return "";
+    return `/report?kind=${encodeURIComponent(resolvedMeta.type)}&q=${encodeURIComponent(resolvedMeta.queryValue)}`;
+  }, [resolvedMeta]);
 
   function applyCandidate(candidate) {
     if (!candidate) return;
@@ -199,7 +209,7 @@ export default function HomeRoute() {
             />
           </div>
           <div className="briefActions">
-            <button onClick={fetchCrimes} disabled={loading} className="primaryButton">
+            <button onClick={() => fetchCrimes()} disabled={loading} className="primaryButton">
               {loading ? "Loading..." : "Search"}
             </button>
           </div>
@@ -241,7 +251,7 @@ export default function HomeRoute() {
             <button
               type="button"
               className={`outputOption ${canPreview ? "outputOption--active" : "outputOption--muted"}`}
-              onClick={fetchCrimes}
+              onClick={() => fetchCrimes()}
               disabled={loading || !canPreview}
             >
               Quick Brief (Free)

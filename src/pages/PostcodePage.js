@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { normalizePostcodeParam } from "../utils/slug";
 import { setMeta } from "../seo";
@@ -26,6 +26,7 @@ export default function PostcodePage() {
   const [trend, setTrend] = useState(null);
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [sourcesSummary, setSourcesSummary] = useState({ lastUpdated: null, sourcesText: "" });
+  const requestRef = useRef(0);
 
   useEffect(() => {
     setMeta(
@@ -35,9 +36,8 @@ export default function PostcodePage() {
   }, [postcode]);
 
   useEffect(() => {
-    let mounted = true;
-
     async function run() {
+      const requestSeq = ++requestRef.current;
       setStatus("loading");
       setError("");
       setTrendError("");
@@ -53,7 +53,7 @@ export default function PostcodePage() {
           { kind: "postcode", value: postcode },
           { onStatus: setStatusLine }
         );
-        if (!mounted) return;
+        if (requestSeq !== requestRef.current) return;
         if (nextProfile.geo?.lat != null && nextProfile.geo?.lon != null) {
           setResolved({ lat: nextProfile.geo.lat, lng: nextProfile.geo.lon });
         }
@@ -68,7 +68,7 @@ export default function PostcodePage() {
         setStatus("ready");
         setStatusLine("");
       } catch (e) {
-        if (!mounted) return;
+        if (requestSeq !== requestRef.current) return;
         setError(String(e?.message || e));
         setDisplayName("");
         setStatus("error");
@@ -77,9 +77,6 @@ export default function PostcodePage() {
     }
 
     run();
-    return () => {
-      mounted = false;
-    };
   }, [postcode]);
 
   return (

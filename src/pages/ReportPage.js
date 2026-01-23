@@ -1,8 +1,7 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { setMeta } from "../seo";
 import { getAreaProfile, getSourcesSummary } from "../data";
-import { classifyQueryType } from "../services/existing";
 import { computeSafetyScore, summarizeTrend, getTopCategories } from "../analytics/safetyScore";
 import { getTopDrivers } from "../analytics/trendAnalysis";
 import { hasProAccess } from "../utils/proAccess";
@@ -17,8 +16,7 @@ export default function ReportPage() {
   const queryInfo = useMemo(() => {
     if (!rawQuery) return null;
     if (rawKind) return { kind: rawKind, value: rawQuery };
-    const inferred = classifyQueryType(rawQuery).kind;
-    return { kind: inferred === "latlng" ? "latlng" : inferred === "postcode" ? "postcode" : "place", value: rawQuery };
+    return { kind: "auto", value: rawQuery };
   }, [rawQuery, rawKind]);
 
   const [status, setStatus] = useState("idle");
@@ -26,6 +24,7 @@ export default function ReportPage() {
   const [profile, setProfile] = useState(null);
   const [sourcesSummary, setSourcesSummary] = useState({ lastUpdated: null, sourcesText: "" });
   const [isPro, setIsPro] = useState(false);
+  const requestRef = useRef(0);
 
   useEffect(() => {
     setMeta(
@@ -36,27 +35,25 @@ export default function ReportPage() {
   }, []);
 
   useEffect(() => {
-    let mounted = true;
     async function run() {
       if (!queryInfo) return;
+      const requestSeq = ++requestRef.current;
       setStatus("loading");
       setError("");
+      setProfile(null);
       try {
         const nextProfile = await getAreaProfile(queryInfo);
-        if (!mounted) return;
+        if (requestSeq !== requestRef.current) return;
         setProfile(nextProfile);
         setSourcesSummary(getSourcesSummary(nextProfile));
         setStatus("ready");
       } catch (err) {
-        if (!mounted) return;
+        if (requestSeq !== requestRef.current) return;
         setError(err?.message || "Unable to generate report.");
         setStatus("error");
       }
     }
     run();
-    return () => {
-      mounted = false;
-    };
   }, [queryInfo]);
 
   if (!queryInfo) {

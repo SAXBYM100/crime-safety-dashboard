@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { setMeta } from "../seo";
 import TrendChart from "../components/TrendChart";
@@ -32,6 +32,7 @@ export default function PlacePage() {
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [sourcesSummary, setSourcesSummary] = useState({ lastUpdated: null, sourcesText: "" });
   const [ambiguousCandidates, setAmbiguousCandidates] = useState([]);
+  const requestRef = useRef(0);
 
   useEffect(() => {
     setMeta(
@@ -48,9 +49,8 @@ export default function PlacePage() {
   }
 
   useEffect(() => {
-    let mounted = true;
-
     async function run() {
+      const requestSeq = ++requestRef.current;
       setStatus("loading");
       setError("");
       setTrendError("");
@@ -67,7 +67,7 @@ export default function PlacePage() {
           { kind: "place", value: placeName },
           { onStatus: setStatusLine }
         );
-        if (!mounted) return;
+        if (requestSeq !== requestRef.current) return;
         if (nextProfile.geo?.lat != null && nextProfile.geo?.lon != null) {
           setResolved({ lat: nextProfile.geo.lat, lng: nextProfile.geo.lon });
         }
@@ -81,7 +81,7 @@ export default function PlacePage() {
         setStatus("ready");
         setStatusLine("");
       } catch (e) {
-        if (!mounted) return;
+        if (requestSeq !== requestRef.current) return;
         if (e?.code === "AMBIGUOUS" && Array.isArray(e.candidates)) {
           setAmbiguousCandidates(e.candidates);
           setError(e.message || "Multiple matches found. Please choose the intended place.");
@@ -95,9 +95,6 @@ export default function PlacePage() {
     }
 
     run();
-    return () => {
-      mounted = false;
-    };
   }, [placeName]);
 
   return (

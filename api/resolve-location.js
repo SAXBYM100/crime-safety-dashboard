@@ -1,3 +1,4 @@
+const { randomUUID } = require("crypto");
 const { rateLimit, getClientIp } = require("./_utils/rateLimit");
 const { getCache, setCache } = require("./_utils/cache");
 const { fetchWithRetry, logDevError } = require("../lib/serverHttp");
@@ -33,8 +34,9 @@ function isLikelyLatLngPair(text) {
   return true;
 }
 
-function isLikelyUKPostcode(text) {
-  return /\b[A-Z]{1,2}\d[A-Z\d]?\s*\d[A-Z]{2}\b/i.test((text || "").trim());
+function extractUKPostcode(text) {
+  const match = String(text || "").match(/\b([A-Z]{1,2}\d[A-Z\d]?\s*\d[A-Z]{2})\b/i);
+  return match ? match[1] : "";
 }
 
 function validateRange(value, kind) {
@@ -111,8 +113,20 @@ async function fetchJsonOrThrow(url, headers = {}) {
   }
 }
 
-function sendError(res, status, code, message) {
-  res.status(status).json({ error: { code, message } });
+function sendError(res, status, requestId, inputNormalized, type, code, message, sources = []) {
+  res.status(status).json({
+    requestId,
+    inputNormalized,
+    type,
+    displayName: "",
+    canonicalSlug: "",
+    lat: null,
+    lng: null,
+    confidence: 0,
+    sources,
+    errors: [message],
+    error: { code, message },
+  });
 }
 
 function slugify(text) {
@@ -128,6 +142,12 @@ function normalizeName(text) {
     .replace(/[^a-z0-9]+/g, " ")
     .replace(/\s+/g, " ")
     .trim();
+}
+
+function normalizeInput(text) {
+  return String(text || "")
+    .trim()
+    .replace(/\s+/g, " ");
 }
 
 function pickAdminArea(address = {}) {
@@ -190,60 +210,145 @@ function formatSuggestionDisplayName(candidate) {
 module.exports = async (req, res) => {
   if (req.method !== "GET") {
     res.setHeader("Allow", "GET");
-    return sendError(res, 405, "METHOD_NOT_ALLOWED", "Only GET is supported.");
+    return sendError(res, 405, randomUUID(), "", "place", "METHOD_NOT_ALLOWED", "Only GET is supported.");
   }
 
   const ip = getClientIp(req);
   const limit = rateLimit(`resolve-location:${ip}`, 40, 60 * 1000);
   if (!limit.allowed) {
     res.setHeader("Retry-After", String(Math.ceil(limit.resetMs / 1000)));
-    return sendError(res, 429, "RATE_LIMITED", "Too many requests. Please try again soon.");
+    return sendError(res, 429, randomUUID(), "", "place", "RATE_LIMITED", "Too many requests. Please try again soon.");
   }
 
-  const q = typeof req.query.q === "string" ? req.query.q.trim() : "";
+  const requestId = randomUUID();
+  const rawQuery = req.query.q;
+  if (typeof rawQuery !== "string") {
+    return sendError(res, 400, requestId, "", "place", "INVALID_QUERY", "Query parameter q must be a string.");
+  }
+
+  const q = rawQuery.trim();
   if (!q) {
-    return sendError(res, 400, "MISSING_QUERY", "Provide a location query.");
+    return sendError(res, 400, requestId, "", "place", "MISSING_QUERY", "Provide a location query.");
   }
 
   try {
-    const cacheKey = `resolve:${q.toLowerCase()}`;
+    const inputNormalized = normalizeInput(q);
+    const cacheKey = `resolve:${inputNormalized.toLowerCase()}`;
     const cached = getCache(cacheKey);
     if (cached) {
+      console.log("[resolve-location]", {
+        requestId,
+        rawQuery: q,
+        inputNormalized,
+        detectedType: cached.type,
+        outcome: "success",
+        provider: cached.sources?.[0] || "cache",
+        cache: "hit",
+      });
       res.setHeader("Cache-Control", "public, s-maxage=86400, stale-while-revalidate=172800");
-      return res.json(cached);
+      return res.json({ requestId, ...cached });
     }
 
     if (isLikelyLatLngPair(q)) {
-      const [a, b] = q.split(",").map((s) => s.trim());
-      const lat = parseCoordinateToken(a, "lat");
-      const lon = parseCoordinateToken(b, "lon");
-      const payload = { lat, lon, source: "manual" };
-      setCache(cacheKey, payload, CACHE_TTL_MS);
-      res.setHeader("Cache-Control", "public, s-maxage=86400, stale-while-revalidate=172800");
-      return res.json(payload);
+      try {
+        const [a, b] = q.split(",").map((s) => s.trim());
+        const lat = parseCoordinateToken(a, "lat");
+        const lon = parseCoordinateToken(b, "lon");
+        const payload = {
+          inputNormalized,
+          type: "latlng",
+          displayName: `${lat.toFixed(5)}, ${lon.toFixed(5)}`,
+          canonicalSlug: slugify(`${lat}-${lon}`),
+          lat,
+          lng: lon,
+          confidence: 1,
+          sources: ["manual"],
+        };
+        setCache(cacheKey, payload, CACHE_TTL_MS);
+        console.log("[resolve-location]", {
+          requestId,
+          rawQuery: q,
+          inputNormalized,
+          detectedType: "latlng",
+          outcome: "success",
+          provider: "manual",
+        });
+        res.setHeader("Cache-Control", "public, s-maxage=86400, stale-while-revalidate=172800");
+        return res.json({ requestId, ...payload });
+      } catch (err) {
+        console.log("[resolve-location]", {
+          requestId,
+          rawQuery: q,
+          inputNormalized,
+          detectedType: "latlng",
+          outcome: "fail",
+          provider: "manual",
+          error: err.message,
+        });
+        return sendError(
+          res,
+          400,
+          requestId,
+          inputNormalized,
+          "latlng",
+          "INVALID_COORDS",
+          err.message || "Invalid coordinates.",
+          ["manual"]
+        );
+      }
     }
 
-    if (isLikelyUKPostcode(q)) {
-      const encoded = encodeURIComponent(q);
+    const extractedPostcode = extractUKPostcode(q);
+    if (extractedPostcode) {
+      const encoded = encodeURIComponent(extractedPostcode);
       const url = `https://api.postcodes.io/postcodes/${encoded}`;
       const json = await fetchJsonOrThrow(url);
       if (!json || json.status !== 200 || !json.result) {
-        return sendError(res, 404, "NOT_FOUND", "Postcode not found.");
+        console.log("[resolve-location]", {
+          requestId,
+          rawQuery: q,
+          inputNormalized,
+          detectedType: "postcode",
+          outcome: "fail",
+          provider: "postcodes.io",
+          error: "Postcode not found.",
+        });
+        return sendError(
+          res,
+          404,
+          requestId,
+          inputNormalized,
+          "postcode",
+          "NOT_FOUND",
+          "Postcode not found.",
+          ["postcodes.io"]
+        );
       }
       const payload = {
-        lat: json.result.latitude,
-        lon: json.result.longitude,
-        source: "postcode",
-        postcode: json.result.postcode,
-        district: json.result.admin_district,
-        region: json.result.region,
+        inputNormalized,
+        type: "postcode",
         displayName: json.result.postcode,
         adminArea: json.result.admin_district || json.result.region || "UK",
         canonicalSlug: slugify(`${json.result.postcode}-${json.result.admin_district || json.result.region || "uk"}`),
+        lat: json.result.latitude,
+        lng: json.result.longitude,
+        confidence: 0.98,
+        sources: ["postcodes.io"],
+        postcode: json.result.postcode,
+        district: json.result.admin_district,
+        region: json.result.region,
       };
       setCache(cacheKey, payload, CACHE_TTL_MS);
+      console.log("[resolve-location]", {
+        requestId,
+        rawQuery: q,
+        inputNormalized,
+        detectedType: "postcode",
+        outcome: "success",
+        provider: "postcodes.io",
+      });
       res.setHeader("Cache-Control", "public, s-maxage=86400, stale-while-revalidate=172800");
-      return res.json(payload);
+      return res.json({ requestId, ...payload });
     }
 
     const encoded = encodeURIComponent(q);
@@ -253,7 +358,25 @@ module.exports = async (req, res) => {
     });
 
     if (!Array.isArray(results) || results.length === 0) {
-      return sendError(res, 404, "NOT_FOUND", "No matching place found.");
+      console.log("[resolve-location]", {
+        requestId,
+        rawQuery: q,
+        inputNormalized,
+        detectedType: "place",
+        outcome: "fail",
+        provider: "nominatim",
+        error: "No matching place found.",
+      });
+      return sendError(
+        res,
+        404,
+        requestId,
+        inputNormalized,
+        "place",
+        "NOT_FOUND",
+        "No matching place found.",
+        ["nominatim"]
+      );
     }
     const normalizedQuery = normalizeName(q);
     const candidates = results
@@ -285,24 +408,52 @@ module.exports = async (req, res) => {
       const topValid = scored.find(isValidSuggestion);
       if (!suggestions.length && topValid && topValid.score >= 0.1) {
         const payload = {
-          lat: topValid.lat,
-          lon: topValid.lon,
-          source: "place",
-          name: topValid.displayName || topValid.name || q,
+          inputNormalized,
+          type: "place",
           displayName: topValid.displayName || topValid.name || q,
-          adminArea: topValid.adminArea,
           canonicalSlug: topValid.canonicalSlug,
+          lat: topValid.lat,
+          lng: topValid.lon,
+          confidence: Math.min(1, Math.max(0.2, topValid.score || 0)),
+          sources: ["nominatim"],
+          adminArea: topValid.adminArea,
         };
         setCache(cacheKey, payload, CACHE_TTL_MS);
+        console.log("[resolve-location]", {
+          requestId,
+          rawQuery: q,
+          inputNormalized,
+          detectedType: "place",
+          outcome: "success",
+          provider: "nominatim",
+        });
         res.setHeader("Cache-Control", "public, s-maxage=86400, stale-while-revalidate=172800");
-        return res.json(payload);
+        return res.json({ requestId, ...payload });
       }
+      const message =
+        suggestions.length > 0
+          ? "Multiple UK locations match this query. Please choose the intended place."
+          : "No matching UK places found. Try a postcode for fastest results.";
+      console.log("[resolve-location]", {
+        requestId,
+        rawQuery: q,
+        inputNormalized,
+        detectedType: "place",
+        outcome: "ambiguous",
+        provider: "nominatim",
+      });
       const payload = {
+        inputNormalized,
+        type: "place",
+        displayName: "",
+        canonicalSlug: "",
+        lat: null,
+        lng: null,
+        confidence: 0,
+        sources: ["nominatim"],
+        errors: [message],
         ambiguous: true,
-        message:
-          suggestions.length > 0
-            ? "Multiple UK locations match this query. Please choose the intended place."
-            : "No matching UK places found. Try a postcode for fastest results.",
+        message,
         candidates: suggestions.map((item) => ({
           displayName: formatSuggestionDisplayName(item),
           adminArea: item.adminArea,
@@ -312,24 +463,52 @@ module.exports = async (req, res) => {
           query: item.query,
         })),
       };
-      return res.json(payload);
+      return res.json({ requestId, ...payload });
     }
 
     const payload = {
-      lat: top.lat,
-      lon: top.lon,
-      source: "place",
-      name: top.displayName || top.name || q,
+      inputNormalized,
+      type: "place",
       displayName: top.displayName || top.name || q,
-      adminArea: top.adminArea,
       canonicalSlug: top.canonicalSlug,
+      lat: top.lat,
+      lng: top.lon,
+      confidence: Math.min(1, Math.max(0.2, top.score || 0)),
+      sources: ["nominatim"],
+      adminArea: top.adminArea,
     };
     setCache(cacheKey, payload, CACHE_TTL_MS);
+    console.log("[resolve-location]", {
+      requestId,
+      rawQuery: q,
+      inputNormalized,
+      detectedType: "place",
+      outcome: "success",
+      provider: "nominatim",
+    });
     res.setHeader("Cache-Control", "public, s-maxage=86400, stale-while-revalidate=172800");
-    return res.json(payload);
+    return res.json({ requestId, ...payload });
   } catch (err) {
     const status = err.status || 500;
-    logDevError("resolve-location", err, { query: q, status });
-    return sendError(res, status, "GEOCODE_FAILED", err.message || "Geocoding failed.");
+    logDevError("resolve-location", err, { query: q, status, requestId });
+    console.log("[resolve-location]", {
+      requestId,
+      rawQuery: q,
+      inputNormalized: normalizeInput(q),
+      detectedType: "place",
+      outcome: "fail",
+      provider: "nominatim",
+      error: err.message,
+    });
+    return sendError(
+      res,
+      status,
+      requestId,
+      normalizeInput(q),
+      "place",
+      "GEOCODE_FAILED",
+      err.message || "Geocoding failed.",
+      ["nominatim"]
+    );
   }
 };
