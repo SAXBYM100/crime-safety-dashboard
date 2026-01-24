@@ -5,6 +5,8 @@ import "./App.css";
 import SiteLayout from "./components/SiteLayout";
 import GlobalLoadingOverlay from "./components/GlobalLoadingOverlay";
 import { LoadingProvider } from "./context/LoadingContext";
+import AdminBar from "./components/AdminBar";
+
 import HomeRoute from "./pages/HomeRoute";
 import HomePage from "./pages/HomePage";
 import PostcodePage from "./pages/PostcodePage";
@@ -19,6 +21,9 @@ import ReportPage from "./pages/ReportPage";
 import ProPage from "./pages/ProPage";
 import ReportsPage from "./pages/ReportsPage";
 import ProCityLanding from "./pages/pro/ProCityLanding";
+import JournalIndex from "./pages/JournalIndex";
+import JournalArticle from "./pages/JournalArticle";
+import JournalAdmin from "./pages/JournalAdmin";
 import GuidesIndex from "./pages/GuidesIndex";
 import GuideCrimeData from "./pages/guides/GuideCrimeData";
 import GuideSafeTravel from "./pages/guides/GuideSafeTravel";
@@ -31,7 +36,9 @@ import CityPage from "./pages/CityPage";
 export default function App() {
   return (
     <LoadingProvider>
+      <AdminBar />
       <GlobalLoadingOverlay />
+
       <Routes>
         <Route element={<SiteLayout />}>
           <Route path="/" element={<HomePage />} />
@@ -59,8 +66,14 @@ export default function App() {
           <Route path="/privacy-policy" element={<PrivacyPolicy />} />
           <Route path="/terms" element={<Terms />} />
           <Route path="/contact" element={<Contact />} />
+
           <Route path="/report" element={<ReportPage />} />
           <Route path="/reports" element={<ReportsPage />} />
+
+          <Route path="/journal" element={<JournalIndex />} />
+          <Route path="/journal/:slug" element={<JournalArticle />} />
+          <Route path="/journal-admin" element={<JournalAdmin />} />
+
           <Route path="/pro" element={<ProPage />} />
           <Route path="/pro/city/:citySlug" element={<ProCityLanding />} />
 

@@ -73,6 +73,20 @@ function normalizeOptions(arg1, arg2, arg3) {
   };
 }
 
+export function setJsonLd(id, data) {
+  if (typeof document === "undefined") return;
+  const existing = document.getElementById(id);
+  if (!data) {
+    if (existing) existing.remove();
+    return;
+  }
+  const script = existing || document.createElement("script");
+  script.id = id;
+  script.type = "application/ld+json";
+  script.text = JSON.stringify(data);
+  if (!existing) document.head.appendChild(script);
+}
+
 /**
  * setMeta
  *

@@ -1622,6 +1622,240 @@ th {
   color: var(--muted);
 }
 
+.journalFeed {
+  display: grid;
+  gap: 18px;
+}
+
+.journalHeader {
+  display: grid;
+  gap: 8px;
+}
+
+.journalGrid {
+  display: grid;
+  gap: 16px;
+}
+
+.journalCard {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 18px;
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.08);
+  display: grid;
+  gap: 8px;
+}
+
+.journalCardHeader {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.journalChip {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(15, 118, 110, 0.12);
+  color: var(--accent);
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.journalDate {
+  font-size: 0.85rem;
+}
+
+.journalTeaser {
+  margin: 0;
+  color: var(--muted);
+}
+
+.journalMetaRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.journalAdPlaceholder {
+  border: 1px dashed #d7d9d7;
+  border-radius: 12px;
+  padding: 18px;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.75rem;
+  color: #7a7f7e;
+  background: #faf9f6;
+}
+
+.journalLoadMore {
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted);
+}
+
+.journalArticle {
+  display: grid;
+  gap: 18px;
+}
+
+.journalArticleHeader h1 {
+  margin: 0;
+}
+
+.journalKicker {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.72rem;
+  color: var(--muted);
+  margin: 0 0 6px;
+}
+
+.journalArticleMeta {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.journalSection {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 18px;
+  display: grid;
+  gap: 10px;
+}
+
+.journalAnswer {
+  background: rgba(15, 118, 110, 0.08);
+  border-color: rgba(15, 118, 110, 0.2);
+}
+
+.journalSignals {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+}
+
+.journalSignalCard {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px;
+  background: var(--cloud);
+}
+
+.journalSignalLabel {
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+
+.journalSignalValue {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--ink);
+  margin-top: 6px;
+}
+
+.journalSignalMeta {
+  display: flex;
+  gap: 10px;
+  font-size: 0.85rem;
+  color: var(--muted);
+  margin-top: 6px;
+}
+
+.journalList {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 6px;
+  color: var(--muted);
+}
+
+.journalInsights {
+  display: grid;
+  gap: 10px;
+}
+
+.journalInsightCard {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px;
+  background: var(--cloud);
+}
+
+.journalCta {
+  background: var(--card);
+}
+
+.journalCtaActions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.journalMeta {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.journalAdminPanel {
+  display: grid;
+  gap: 12px;
+  max-width: 420px;
+}
+
+.journalAdminLabel {
+  display: grid;
+  gap: 6px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.journalAdminLabel input,
+.journalAdminLabel select {
+  height: 44px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0 12px;
+  background: var(--surface);
+}
+
+.journalAdminResults {
+  display: grid;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.journalAdminResult {
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+  align-items: center;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 10px 12px;
+  background: var(--surface);
+}
+
 .decisionBrief {
   display: grid;
   gap: 18px;
@@ -1871,6 +2105,26 @@ th {
 }
 
 @media (max-width: 640px) {
+  .journalCardHeader,
+  .journalMetaRow {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .journalSignals {
+    grid-template-columns: 1fr;
+  }
+
+  .journalCtaActions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .journalAdminResult {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
   .decisionBrief__rowMeta {
     flex-direction: column;
     align-items: flex-start;

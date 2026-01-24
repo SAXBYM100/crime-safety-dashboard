@@ -1,0 +1,148 @@
+﻿import React, { useEffect, useMemo, useRef, useState } from "react";
+import { Link } from "react-router-dom";
+import { fetchJournalPage } from "../services/journalStore";
+import { setMeta, setJsonLd } from "../seo";
+
+function formatDate(value) {
+  if (!value) return "";
+  const date = value instanceof Date ? value : new Date(value);
+  return date.toLocaleDateString();
+}
+
+function formatRelative(value) {
+  if (!value) return "";
+  const date = value instanceof Date ? value : new Date(value);
+  const diffMs = Date.now() - date.getTime();
+  const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+  if (days <= 0) return "Today";
+  if (days === 1) return "1 day ago";
+  return `${days} days ago`;
+}
+
+function buildFeedSchema(items) {
+  const itemList = items.map((item, idx) => ({
+    "@type": "ListItem",
+    position: idx + 1,
+    url: `https://area-iq.com/journal/${item.slug}`,
+  }));
+  return {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    itemListElement: itemList,
+  };
+}
+
+export default function JournalIndex() {
+  const [items, setItems] = useState([]);
+  const [cursor, setCursor] = useState(null);
+  const [status, setStatus] = useState("idle");
+  const [hasMore, setHasMore] = useState(true);
+  const sentinelRef = useRef(null);
+  const loadingRef = useRef(false);
+
+  useEffect(() => {
+    setMeta(
+      "Area IQ Journal | Intelligence Feed",
+      "Latest UK safety and risk intelligence. Fast headlines with deep-dive briefs for every location.",
+      { canonicalPath: "/journal" }
+    );
+  }, []);
+
+  useEffect(() => {
+    if (items.length > 0) {
+      setJsonLd("journal-feed", buildFeedSchema(items));
+    }
+    return () => {
+      setJsonLd("journal-feed", null);
+    };
+  }, [items]);
+
+  const loadMore = async () => {
+    if (loadingRef.current || !hasMore) return;
+    loadingRef.current = true;
+    setStatus(items.length ? "loading-more" : "loading");
+    try {
+      const page = await fetchJournalPage({ cursor, pageSize: 10 });
+      setItems((prev) => [...prev, ...page.items]);
+      setCursor(page.cursor);
+      setHasMore(page.hasMore);
+      setStatus("ready");
+    } catch {
+      setStatus("error");
+    } finally {
+      loadingRef.current = false;
+    }
+  };
+
+  useEffect(() => {
+    loadMore();
+  }, []);
+
+  useEffect(() => {
+    if (!sentinelRef.current || !hasMore) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            loadMore();
+          }
+        });
+      },
+      { rootMargin: "220px 0px" }
+    );
+    observer.observe(sentinelRef.current);
+    return () => observer.disconnect();
+  }, [hasMore, cursor, items.length]);
+
+  const renderedItems = useMemo(() => {
+    return items.map((item, idx) => {
+      const showAd = (idx + 1) % 8 === 0;
+      return (
+        <React.Fragment key={item.id || item.slug || idx}>
+          <article className="journalCard">
+            <div className="journalCardHeader">
+              <span className="journalChip">{item.tags?.[0] || item.locationRef || "UK"}</span>
+              <span className="journalDate">{formatRelative(item.publishDate)}</span>
+            </div>
+            <h2>{item.headline}</h2>
+            <p className="journalTeaser">{item.teaser}</p>
+            <div className="journalMetaRow">
+              <span>{formatDate(item.publishDate)}</span>
+              <Link to={`/journal/${item.slug}`} className="ghostButton">
+                View intelligence
+              </Link>
+            </div>
+          </article>
+          {showAd && (
+            <div className="journalAdPlaceholder" aria-hidden="true">
+              Sponsored
+            </div>
+          )}
+        </React.Fragment>
+      );
+    });
+  }, [items]);
+
+  return (
+    <div className="contentWrap pageShell journalFeed">
+      <header className="journalHeader">
+        <h1>Area IQ Journal</h1>
+        <p>Fast-moving safety signals and intelligence briefs built from official UK police data.</p>
+      </header>
+
+      {status === "error" && <p className="error">Journal feed is unavailable right now.</p>}
+      {status === "loading" && <p className="statusLine">Loading intelligence feed...</p>}
+      {status === "ready" && items.length === 0 && (
+        <p className="statusLine">No journal articles are published yet.</p>
+      )}
+
+      <div className="journalGrid">{renderedItems}</div>
+
+      {hasMore && (
+        <div ref={sentinelRef} className="journalLoadMore">
+          {status === "loading-more" ? "Loading more..." : ""}
+        </div>
+      )}
+    </div>
+  );
+}
