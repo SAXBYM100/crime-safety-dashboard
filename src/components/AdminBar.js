@@ -2,6 +2,19 @@ import { auth } from "../firebase";
 import { GoogleAuthProvider, signInWithPopup, signOut } from "firebase/auth";
 import { useEffect, useState } from "react";
 
+export async function loginWithGoogle() {
+  const provider = new GoogleAuthProvider();
+  try {
+    await signInWithPopup(auth, provider);
+  } catch (error) {
+    const code = error?.code;
+    if (code === "auth/popup-closed-by-user" || code === "auth/cancelled-popup-request") {
+      return;
+    }
+    console.error("Admin sign-in failed:", error);
+  }
+}
+
 export default function AdminBar() {
   const [admin, setAdmin] = useState(false);
   const [user, setUser] = useState(null);
@@ -20,18 +33,13 @@ export default function AdminBar() {
     });
   }, []);
 
-  async function login() {
-    const provider = new GoogleAuthProvider();
-    await signInWithPopup(auth, provider);
-  }
-
   async function logout() {
     await signOut(auth);
   }
 
   if (!user) {
     return (
-      <button onClick={login} style={styles.btn}>
+      <button onClick={loginWithGoogle} style={styles.btn}>
         Admin Sign In
       </button>
     );

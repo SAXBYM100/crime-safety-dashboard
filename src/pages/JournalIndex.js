@@ -3,15 +3,22 @@ import { Link } from "react-router-dom";
 import { fetchJournalPage } from "../services/journalStore";
 import { setMeta, setJsonLd } from "../seo";
 
+function toDate(value) {
+  if (!value) return null;
+  if (value instanceof Date) return value;
+  if (typeof value?.toDate === "function") return value.toDate();
+  return new Date(value);
+}
+
 function formatDate(value) {
-  if (!value) return "";
-  const date = value instanceof Date ? value : new Date(value);
+  const date = toDate(value);
+  if (!date || Number.isNaN(date.getTime())) return "";
   return date.toLocaleDateString();
 }
 
 function formatRelative(value) {
-  if (!value) return "";
-  const date = value instanceof Date ? value : new Date(value);
+  const date = toDate(value);
+  if (!date || Number.isNaN(date.getTime())) return "";
   const diffMs = Date.now() - date.getTime();
   const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
   if (days <= 0) return "Today";
@@ -42,7 +49,7 @@ export default function JournalIndex() {
 
   useEffect(() => {
     setMeta(
-      "Area IQ Journal | Intelligence Feed",
+      "Area IQ Live Feed | UK Safety & Risk Intelligence",
       "Latest UK safety and risk intelligence. Fast headlines with deep-dive briefs for every location.",
       { canonicalPath: "/journal" }
     );
@@ -67,7 +74,8 @@ export default function JournalIndex() {
       setCursor(page.cursor);
       setHasMore(page.hasMore);
       setStatus("ready");
-    } catch {
+    } catch (err) {
+      console.error("Journal feed error:", err);
       setStatus("error");
     } finally {
       loadingRef.current = false;
@@ -126,7 +134,7 @@ export default function JournalIndex() {
   return (
     <div className="contentWrap pageShell journalFeed">
       <header className="journalHeader">
-        <h1>Area IQ Journal</h1>
+        <h1>Area IQ Live Feed</h1>
         <p>Fast-moving safety signals and intelligence briefs built from official UK police data.</p>
       </header>
 

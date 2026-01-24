@@ -3,9 +3,16 @@ import { Link, useParams } from "react-router-dom";
 import { fetchJournalArticleBySlug } from "../services/journalStore";
 import { setMeta, setJsonLd, toBrandedUrl } from "../seo";
 
+function toDate(value) {
+  if (!value) return null;
+  if (value instanceof Date) return value;
+  if (typeof value?.toDate === "function") return value.toDate();
+  return new Date(value);
+}
+
 function formatDate(value) {
-  if (!value) return "";
-  const date = value instanceof Date ? value : new Date(value);
+  const date = toDate(value);
+  if (!date || Number.isNaN(date.getTime())) return "";
   return date.toLocaleDateString();
 }
 
@@ -93,7 +100,7 @@ export default function JournalArticle() {
   return (
     <div className="contentWrap pageShell journalArticle">
       <header className="journalArticleHeader">
-        <p className="journalKicker">Journal intelligence brief</p>
+        <p className="journalKicker">Live feed intelligence brief</p>
         <h1>{article.headline}</h1>
         <div className="journalArticleMeta">
           <span>{article.tags?.[0] || article.locationRef || "UK"}</span>

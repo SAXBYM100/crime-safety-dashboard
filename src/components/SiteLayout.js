@@ -57,9 +57,9 @@ export default function SiteLayout() {
               label={<span className="navItem"><Icon icon={building2} />Intelligence</span>}
             />
             <NavItem
-              to="/reports"
+              to="/journal"
               onClick={() => setMenuOpen(false)}
-              label={<span className="navItem"><Icon icon={fileText} />Reports</span>}
+              label={<span className="navItem navEmphasis"><Icon icon={fileText} />Live Feed</span>}
             />
             <NavItem
               to="/pro"

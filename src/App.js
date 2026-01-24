@@ -68,7 +68,7 @@ export default function App() {
           <Route path="/contact" element={<Contact />} />
 
           <Route path="/report" element={<ReportPage />} />
-          <Route path="/reports" element={<ReportsPage />} />
+          <Route path="/reports" element={<Navigate to="/journal" replace />} />
 
           <Route path="/journal" element={<JournalIndex />} />
           <Route path="/journal/:slug" element={<JournalArticle />} />

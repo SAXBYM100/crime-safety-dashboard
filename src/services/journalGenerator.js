@@ -184,7 +184,7 @@ function buildArticlePayload(profile, options = {}) {
   const insights = buildInsights({ deltaPct, topCategory, topShare, trendRows });
 
   return {
-    slug: slugify(`${locationName}-${month || "latest"}`),
+    slug: slugify(`${canonicalSlug}-${month || "latest"}`),
 
     // Store as ISO strings for easy Firestore sorting + JSON-LD
     publishDate: generatedAtIso,
