@@ -18,3 +18,9 @@ setAdmin.js
 # Generated files
 public/sitemap.xml
 
+serviceAccount*.json
+*service-account*.json
+firebase-admin*.json
+*.pem
+*.key
+*.p12

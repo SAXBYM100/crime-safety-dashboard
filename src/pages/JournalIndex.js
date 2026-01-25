@@ -26,6 +26,31 @@ function formatRelative(value) {
   return `${days} days ago`;
 }
 
+function dedupeBySlug(items) {
+  const map = new Map();
+  items.forEach((item) => {
+    const key = item.slug || item.id;
+    if (!key) return;
+    const existing = map.get(key);
+    if (!existing) {
+      map.set(key, item);
+      return;
+    }
+    const existingDate = toDate(existing.publishDate);
+    const nextDate = toDate(item.publishDate);
+    if (!existingDate || !nextDate) return;
+    if (nextDate.getTime() > existingDate.getTime()) {
+      map.set(key, item);
+    }
+  });
+  return Array.from(map.values()).sort((a, b) => {
+    const aDate = toDate(a.publishDate);
+    const bDate = toDate(b.publishDate);
+    if (!aDate || !bDate) return 0;
+    return bDate.getTime() - aDate.getTime();
+  });
+}
+
 function buildFeedSchema(items) {
   const itemList = items.map((item, idx) => ({
     "@type": "ListItem",
@@ -70,7 +95,7 @@ export default function JournalIndex() {
     setStatus(items.length ? "loading-more" : "loading");
     try {
       const page = await fetchJournalPage({ cursor, pageSize: 10 });
-      setItems((prev) => [...prev, ...page.items]);
+      setItems((prev) => dedupeBySlug([...prev, ...page.items]));
       setCursor(page.cursor);
       setHasMore(page.hasMore);
       setStatus("ready");

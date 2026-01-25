@@ -24,7 +24,6 @@
     "prebuild": "npm run generate:sitemap:routes && npm run generate:sitemap",
     "build": "react-scripts build",
     "test": "react-scripts test"
-
   },
   "browserslist": {
     "production": [
