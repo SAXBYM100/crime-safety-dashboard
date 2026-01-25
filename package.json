@@ -3,12 +3,12 @@
   "version": "1.0.0",
   "private": true,
   "description": "React rich web application: Crime & Safety Dashboard using UK Police Data API with postcode/place geocoding.",
-  "proxy": "http://localhost:3001",
   "dependencies": {
     "@iconify/icons-lucide": "^1.2.135",
     "@iconify/react": "^6.0.2",
     "firebase": "^10.12.4",
     "firebase-admin": "^13.6.0",
+    "http-proxy-middleware": "^2.0.9",
     "leaflet": "^1.9.4",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
@@ -19,11 +19,17 @@
   },
   "scripts": {
     "start": "react-scripts start",
+    "dev:api": "vercel dev --listen 3001",
+    "dev": "concurrently \"npm run dev:api\" \"npm start\"",
     "generate:sitemap:routes": "node scripts/generate-sitemap-routes.js",
     "generate:sitemap": "node scripts/generate-sitemap.js",
     "prebuild": "npm run generate:sitemap:routes && npm run generate:sitemap",
     "build": "react-scripts build",
     "test": "react-scripts test"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1",
+    "vercel": "^34.4.0"
   },
   "browserslist": {
     "production": [

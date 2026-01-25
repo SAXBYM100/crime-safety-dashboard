@@ -1,4 +1,4 @@
-﻿import {
+import {
   Timestamp,
   addDoc,
   collection,
@@ -10,6 +10,7 @@
   where,
 } from "firebase/firestore";
 import { db } from "./firebase";
+import { collectUndefinedPaths, deepStripUndefined } from "../utils/deepStripUndefined";
 
 const JOURNAL_COLLECTION = "journalArticles";
 const DEBUG_JOURNAL = process.env.REACT_APP_DEBUG_JOURNAL === "true";
@@ -105,10 +106,15 @@ export async function createJournalArticle(payload) {
   const generatedAt = payload.generatedAt instanceof Date
     ? Timestamp.fromDate(payload.generatedAt)
     : payload.generatedAt;
-  const docRef = await addDoc(collection(db, JOURNAL_COLLECTION), {
+  const sanitized = deepStripUndefined({
     ...payload,
     publishDate,
     generatedAt,
   });
+  const undefinedPaths = collectUndefinedPaths(sanitized);
+  if (undefinedPaths.length) {
+    throw new Error(`Journal article contains undefined values at: ${undefinedPaths.join(", ")}`);
+  }
+  const docRef = await addDoc(collection(db, JOURNAL_COLLECTION), sanitized);
   return docRef.id;
 }
