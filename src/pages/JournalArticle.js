@@ -3,6 +3,8 @@ import { Link, useParams } from "react-router-dom";
 import { fetchJournalArticleBySlug } from "../services/journalStore";
 import { setMeta, setJsonLd, toBrandedUrl } from "../seo";
 
+const FALLBACK_IMAGE = "/images/cities/drone.jpg";
+
 function toDate(value) {
   if (!value) return null;
   if (value instanceof Date) return value;
@@ -19,6 +21,7 @@ function formatDate(value) {
 function buildArticleSchema(article) {
   if (!article) return null;
   const url = toBrandedUrl(`/journal/${article.slug}`);
+  const imageUrl = article.heroImage?.url ? toBrandedUrl(article.heroImage.url) : undefined;
   return {
     "@context": "https://schema.org",
     "@type": "NewsArticle",
@@ -27,6 +30,7 @@ function buildArticleSchema(article) {
     datePublished: article.publishDate ? new Date(article.publishDate).toISOString() : undefined,
     dateModified: article.generatedAt ? new Date(article.generatedAt).toISOString() : undefined,
     mainEntityOfPage: url,
+    image: imageUrl ? [imageUrl] : undefined,
     author: {
       "@type": "Organization",
       name: "Area IQ",
@@ -68,12 +72,27 @@ export default function JournalArticle() {
 
   useEffect(() => {
     if (!article) return;
+    const imageUrl = article.heroImage?.url ? toBrandedUrl(article.heroImage.url) : undefined;
     setMeta(article.seoTitle || article.headline, article.seoDescription || article.teaser, {
       canonicalPath: `/journal/${article.slug}`,
+      og: {
+        image: imageUrl,
+      },
+      twitter: {
+        image: imageUrl,
+      },
     });
     setJsonLd("journal-article", buildArticleSchema(article));
     return () => setJsonLd("journal-article", null);
   }, [article]);
+
+  useEffect(() => {
+    if (status !== "not-found") return;
+    setMeta("Brief not found | Area IQ", "This intelligence brief is unavailable.", {
+      canonicalPath: "/journal",
+      robots: "noindex,follow",
+    });
+  }, [status]);
 
   if (status === "loading") {
     return (
@@ -99,6 +118,25 @@ export default function JournalArticle() {
 
   return (
     <div className="contentWrap pageShell journalArticle">
+      {article.heroImage?.url && (
+        <div className="journalHero">
+          <div className="imgWrap hero">
+            <img
+              src={article.heroImage.url}
+              alt={article.heroImage.alt || ""}
+              loading="eager"
+              decoding="async"
+              onError={(event) => {
+                event.currentTarget.onerror = null;
+                event.currentTarget.src = FALLBACK_IMAGE;
+              }}
+            />
+          </div>
+          {article.heroImage.credit && (
+            <p className="journalHeroCredit imgCredit">{article.heroImage.credit}</p>
+          )}
+        </div>
+      )}
       <header className="journalArticleHeader">
         <p className="journalKicker">Live feed intelligence brief</p>
         <h1>{article.headline}</h1>
@@ -154,6 +192,28 @@ export default function JournalArticle() {
         </div>
       </section>
 
+      {Array.isArray(article.gallery) && article.gallery.length > 0 && (
+        <section className="journalSection">
+          <h2>Image gallery</h2>
+          <div className="journalGallery">
+            {article.gallery.map((item, idx) => (
+              <div key={`${item.url}-${idx}`} className="imgWrap gallery">
+                <img
+                  src={item.url}
+                  alt={item.alt || ""}
+                  loading="lazy"
+                  decoding="async"
+                  onError={(event) => {
+                    event.currentTarget.onerror = null;
+                    event.currentTarget.src = FALLBACK_IMAGE;
+                  }}
+                />
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
       <section className="journalSection">
         <h2>Methodology and sources</h2>
         <p>{article.methodology}</p>
@@ -162,6 +222,9 @@ export default function JournalArticle() {
             <li key={`${item}-${idx}`}>{item}</li>
           ))}
         </ul>
+        <p className="journalMeta journalDisclosure">
+          This brief is generated with AI assistance using public data sources.
+        </p>
         <p className="journalMeta">Generated at {formatDate(article.generatedAt)}</p>
       </section>
 

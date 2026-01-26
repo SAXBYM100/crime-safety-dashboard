@@ -2,6 +2,7 @@ import {
   Timestamp,
   addDoc,
   collection,
+  deleteDoc,
   getDocs,
   limit,
   orderBy,
@@ -10,7 +11,8 @@ import {
   where,
 } from "firebase/firestore";
 import { db } from "./firebase";
-import { collectUndefinedPaths, deepStripUndefined } from "../utils/deepStripUndefined";
+import { collectUndefinedPaths, deepStripUndefined, stripEmptyObjectsDeep } from "../utils/deepStripUndefined";
+import { validateAndNormalizeMedia } from "../utils/mediaValidator";
 
 const JOURNAL_COLLECTION = "journalArticles";
 const DEBUG_JOURNAL = process.env.REACT_APP_DEBUG_JOURNAL === "true";
@@ -99,18 +101,42 @@ export async function fetchJournalArticleBySlug(slug) {
   return mapArticle(snap.docs[0]);
 }
 
+export async function fetchJournalArticlesBySlug(slug) {
+  if (!slug) return [];
+  const q = query(
+    collection(db, JOURNAL_COLLECTION),
+    where("slug", "==", slug)
+  );
+  const snap = await getDocs(q);
+  if (snap.empty) return [];
+  return snap.docs.map(mapArticle);
+}
+
+export async function deleteJournalArticlesBySlug(slug) {
+  if (!slug) return 0;
+  const q = query(
+    collection(db, JOURNAL_COLLECTION),
+    where("slug", "==", slug)
+  );
+  const snap = await getDocs(q);
+  if (snap.empty) return 0;
+  await Promise.all(snap.docs.map((docSnap) => deleteDoc(docSnap.ref)));
+  return snap.size;
+}
+
 export async function createJournalArticle(payload) {
+  const normalized = validateAndNormalizeMedia(payload);
   const publishDate = payload.publishDate instanceof Date
     ? Timestamp.fromDate(payload.publishDate)
     : payload.publishDate;
   const generatedAt = payload.generatedAt instanceof Date
     ? Timestamp.fromDate(payload.generatedAt)
     : payload.generatedAt;
-  const sanitized = deepStripUndefined({
-    ...payload,
+  const sanitized = stripEmptyObjectsDeep(deepStripUndefined({
+    ...normalized,
     publishDate,
     generatedAt,
-  });
+  })) || {};
   const undefinedPaths = collectUndefinedPaths(sanitized);
   if (undefinedPaths.length) {
     throw new Error(`Journal article contains undefined values at: ${undefinedPaths.join(", ")}`);

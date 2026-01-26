@@ -19,6 +19,28 @@ export function deepStripUndefined(input) {
   return input;
 }
 
+export function stripEmptyObjectsDeep(input) {
+  if (Array.isArray(input)) {
+    const cleaned = input
+      .map((entry) => stripEmptyObjectsDeep(entry))
+      .filter((entry) => entry !== undefined);
+    return cleaned.length ? cleaned : undefined;
+  }
+
+  if (input && typeof input === "object" && Object.getPrototypeOf(input) === Object.prototype) {
+    const output = {};
+    Object.entries(input).forEach(([key, value]) => {
+      const cleaned = stripEmptyObjectsDeep(value);
+      if (cleaned !== undefined) {
+        output[key] = cleaned;
+      }
+    });
+    return Object.keys(output).length ? output : undefined;
+  }
+
+  return input;
+}
+
 export function collectUndefinedPaths(input, basePath = "") {
   const paths = [];
 

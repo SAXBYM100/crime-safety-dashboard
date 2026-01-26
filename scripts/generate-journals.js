@@ -1,14 +1,21 @@
-// scripts/generate-journals.js
+﻿// scripts/generate-journals.js
 import fs from "fs";
 import path from "path";
+import dotenv from "dotenv";
+import { fileURLToPath } from "url";
 import { generateJournalDrafts } from "../src/services/journalGenerator.js";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const PROJECT_ROOT = path.resolve(__dirname, "..");
+dotenv.config({ path: path.join(PROJECT_ROOT, ".env.local") });
+dotenv.config({ path: path.join(PROJECT_ROOT, ".env") });
 
 // Path to your manifest
 const MANIFEST_PATH = path.join(process.cwd(), "scripts", "image-manifest.json");
 
 function loadImageManifest() {
   if (!fs.existsSync(MANIFEST_PATH)) {
-    console.warn("No image-manifest.json found � running without images");
+    console.warn("No image-manifest.json found — running without images");
     return { items: [] };
   }
   return JSON.parse(fs.readFileSync(MANIFEST_PATH, "utf8"));

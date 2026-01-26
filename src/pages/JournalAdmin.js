@@ -1,16 +1,32 @@
 ﻿import React, { useEffect, useState } from "react";
 import { setMeta } from "../seo";
 import cities from "../data/cities.json";
-import { generateJournalDrafts } from "../services/journalGenerator";
+import { fetchCrimeStats } from "../journal/fetchCrimeStats";
+import { fetchGuardianHeadlines } from "../journal/fetchGuardianHeadlines";
+import { loadImageManifest } from "../journal/loadImageManifest";
+import {
+  createJournalArticle,
+  deleteJournalArticlesBySlug,
+  fetchJournalArticlesBySlug,
+} from "../services/journalStore";
 
-const DEFAULT_LOCATIONS = Object.values(cities)
-  .map((city) => city.name)
-  .filter(Boolean);
+const DEFAULT_LOCATIONS = Object.entries(cities)
+  .map(([slug, city]) => ({
+    name: city.name,
+    canonicalName: city.name,
+    canonicalSlug: slug,
+    lat: city.lat,
+    lng: city.lng,
+    population: city.population,
+    policeForce: city.policeForce,
+  }))
+  .filter((city) => city.name);
 
 export default function JournalAdmin() {
   const [month, setMonth] = useState("");
   const [status, setStatus] = useState("published");
   const [withImages, setWithImages] = useState(true);
+  const [useGemini, setUseGemini] = useState(true);
   const [imageTheme, setImageTheme] = useState("auto");
   const [postType, setPostType] = useState("auto");
   const [narrativeAngle, setNarrativeAngle] = useState("auto");
@@ -19,28 +35,103 @@ export default function JournalAdmin() {
   const [overwriteExisting, setOverwriteExisting] = useState(false);
   const [results, setResults] = useState([]);
   const [running, setRunning] = useState(false);
+  const [banner, setBanner] = useState("");
   const enabled = process.env.REACT_APP_JOURNAL_ADMIN === "true";
 
   useEffect(() => {
     setMeta("Journal Admin | Area IQ", "Manual journal generation console.");
   }, []);
 
+  const callEditorialize = async (payload) => {
+    const res = await fetch("/api/editorialize", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    let data = null;
+    try {
+      data = await res.json();
+    } catch (error) {
+      data = null;
+    }
+    if (!res.ok || (data && data.error)) {
+      const message = data?.message || data?.error || `Editorialize failed (${res.status})`;
+      const error = new Error(message);
+      error.payload = data || { error: "EDITORIALIZE_HTTP_ERROR", status: res.status };
+      throw error;
+    }
+    return data;
+  };
+
   const handleGenerate = async () => {
     if (!enabled || running) return;
     setRunning(true);
     setResults([]);
+    setBanner("");
     try {
       const locations = DEFAULT_LOCATIONS.slice(0, Math.max(1, locationsCount));
-      const output = await generateJournalDrafts(locations, {
-        monthYYYYMM: month,
-        status,
-        withImages,
-        imageTheme,
-        postType: postType === "auto" ? undefined : postType,
-        narrativeAngle: narrativeAngle === "auto" ? undefined : narrativeAngle,
-        structureVariant: structureVariant === "auto" ? undefined : structureVariant,
-        overwriteExisting,
-      });
+      const imageManifest = await loadImageManifest();
+      const output = [];
+
+      for (const location of locations) {
+        try {
+          const crimeStats = await fetchCrimeStats(location, { monthYYYYMM: month });
+          const guardianHeadlines = await fetchGuardianHeadlines(location.name, 5);
+          const payload = await callEditorialize({
+            useGemini,
+            location: {
+              ...location,
+              canonicalSlug: crimeStats.canonicalSlug || location.canonicalSlug,
+            },
+            crimeStats,
+            guardianHeadlines,
+            imageManifest,
+            options: {
+              monthYYYYMM: month,
+              status,
+              withImages,
+              imageTheme,
+              postType: postType === "auto" ? undefined : postType,
+              narrativeAngle: narrativeAngle === "auto" ? undefined : narrativeAngle,
+              structureVariant: structureVariant === "auto" ? undefined : structureVariant,
+            },
+          });
+
+          if (!overwriteExisting) {
+            const existing = await fetchJournalArticlesBySlug(payload.slug);
+            if (existing.length) {
+              output.push({
+                locationName: location.name,
+                status: "skipped",
+                error: "Article already exists for slug.",
+              });
+              continue;
+            }
+          } else {
+            await deleteJournalArticlesBySlug(payload.slug);
+          }
+
+          const id = await createJournalArticle(payload);
+          output.push({ locationName: location.name, status: "ok", id, slug: payload.slug });
+        } catch (error) {
+          const message = String(error?.message || "");
+          const payload = error?.payload || {};
+          if (payload?.error === "EDITORIALIZE_CRASH") {
+            setBanner(`Editorialize crashed (${payload.phase}): ${payload.message || "unknown error"}`);
+          } else if (payload?.error && payload?.error.startsWith("GEMINI_")) {
+            setBanner(`Gemini error: ${payload.error} ${payload.details || payload.message || ""}`.trim());
+          } else if (message.toLowerCase().includes("missing_env") || message.toLowerCase().includes("gemini")) {
+            setBanner("Gemini not configured. Run npm run env:pull and restart npm run dev.");
+          } else if (message.toLowerCase().includes("api_unreachable")) {
+            setBanner("API unreachable. Ensure Vercel dev is running on port 3002.");
+          }
+          output.push({
+            locationName: location.name,
+            status: "error",
+            error: error?.message || String(error),
+          });
+        }
+      }
       setResults(output);
     } finally {
       setRunning(false);
@@ -60,6 +151,7 @@ export default function JournalAdmin() {
     <div className="contentWrap pageShell journalAdmin">
       <h1>Journal admin</h1>
       <p>Generate draft or published journal articles for the top locations.</p>
+      {banner && <p className="error">{banner}</p>}
 
       <div className="journalAdminPanel">
         <label className="journalAdminLabel">
@@ -121,6 +213,14 @@ export default function JournalAdmin() {
           />
         </label>
         <label className="journalAdminLabel">
+          Use Gemini editorial mode
+          <input
+            type="checkbox"
+            checked={useGemini}
+            onChange={(e) => setUseGemini(e.target.checked)}
+          />
+        </label>
+        <label className="journalAdminLabel">
           Image theme
           <select value={imageTheme} onChange={(e) => setImageTheme(e.target.value)}>
             <option value="auto">auto</option>
@@ -164,6 +264,9 @@ export default function JournalAdmin() {
         </p>
         <p>
           Images: {withImages ? "on" : "off"} | Theme: {imageTheme} | Overwrite: {overwriteExisting ? "yes" : "no"}
+        </p>
+        <p>
+          Gemini editorial: {useGemini ? "on" : "off"}
         </p>
       </div>
 

@@ -1736,6 +1736,49 @@ th {
   gap: 18px;
 }
 
+.journalHero {
+  display: grid;
+  gap: 8px;
+}
+
+.journalGallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+}
+
+.imgWrap {
+  width: 100%;
+  overflow: hidden;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.imgWrap.hero {
+  aspect-ratio: 16 / 9;
+}
+
+.imgWrap.gallery {
+  aspect-ratio: 4 / 3;
+}
+
+.imgWrap img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.imgCredit {
+  font-size: 0.75rem;
+  opacity: 0.75;
+  margin-top: 6px;
+}
+
+.journalCardThumb {
+  border-radius: 12px;
+}
+
 .journalArticleHeader h1 {
   margin: 0;
 }

@@ -13,6 +13,9 @@
  */
 
 const admin = require("firebase-admin");
+const path = require("path");
+require("dotenv").config({ path: path.join(__dirname, "..", ".env.local") });
+require("dotenv").config({ path: path.join(__dirname, "..", ".env") });
 
 function isIsoString(v) {
   return typeof v === "string" && /\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/.test(v);

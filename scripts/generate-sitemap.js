@@ -1,6 +1,8 @@
 ﻿/* scripts/generate-sitemap.js */
 const fs = require("fs");
 const path = require("path");
+require("dotenv").config({ path: path.join(__dirname, "..", ".env.local") });
+require("dotenv").config({ path: path.join(__dirname, "..", ".env") });
 
 const DEFAULT_SITE_URL = "https://area-iq.com";
 const ROUTES_JSON_PATH = path.join(__dirname, "..", "src", "seo", "sitemapRoutes.json");
@@ -26,7 +28,7 @@ const FALLBACK_ROUTES = [
 ];
 
 function getSiteUrl() {
-  const fromEnv = process.env.REACT_APP_SITE_URL || process.env.SITE_URL;
+  const fromEnv = process.env.REACT_APP_SITE_URL;
   const siteUrl = (fromEnv || DEFAULT_SITE_URL).trim();
   return siteUrl.endsWith("/") ? siteUrl.slice(0, -1) : siteUrl;
 }

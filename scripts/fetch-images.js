@@ -2,7 +2,13 @@
 import fs from "fs";
 import path from "path";
 import crypto from "crypto";
-import "dotenv/config";
+import dotenv from "dotenv";
+import { fileURLToPath } from "url";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const PROJECT_ROOT = path.resolve(__dirname, "..");
+dotenv.config({ path: path.join(PROJECT_ROOT, ".env.local") });
+dotenv.config({ path: path.join(PROJECT_ROOT, ".env") });
 
 // --------------------
 // ENV

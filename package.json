@@ -6,10 +6,12 @@
   "dependencies": {
     "@iconify/icons-lucide": "^1.2.135",
     "@iconify/react": "^6.0.2",
+    "dotenv": "^17.2.3",
     "firebase": "^10.12.4",
     "firebase-admin": "^13.6.0",
     "http-proxy-middleware": "^2.0.9",
     "leaflet": "^1.9.4",
+    "node-fetch": "^2.6.12",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-leaflet": "^4.2.1",
@@ -19,16 +21,27 @@
   },
   "scripts": {
     "start": "react-scripts start",
-    "dev:api": "vercel dev --listen 3001",
-    "dev": "concurrently \"npm run dev:api\" \"npm start\"",
+    "verify:api": "node scripts/verify-api-modules.js",
+    "predev": "npm run verify:api",
+    "dev:api": "node scripts/check-port.js 3002 && vercel dev --listen 3002",
+    "dev:web": "cross-env API_PORT=3002 react-scripts start",
+    "dev": "npm run verify:api && concurrently \"npm run dev:api\" \"npm run dev:web\"",
+    "dev:api:3001": "node scripts/check-port.js 3001 && vercel dev --listen 3001",
+    "dev:web:3001": "cross-env API_PORT=3001 react-scripts start",
+    "dev:3001": "npm run verify:api && concurrently \"npm run dev:api:3001\" \"npm run dev:web:3001\"",
+    "env:pull": "vercel env pull .env.local",
     "generate:sitemap:routes": "node scripts/generate-sitemap-routes.js",
     "generate:sitemap": "node scripts/generate-sitemap.js",
-    "prebuild": "npm run generate:sitemap:routes && npm run generate:sitemap",
+    "generate:image-manifest": "node scripts/generate-image-manifest.js",
+    "generate:journal:batch": "node scripts/generate-journal-batch.js",
+    "journal:unpublish:all": "node scripts/unpublish-all-journals.js",
+    "prebuild": "npm run verify:api && npm run generate:image-manifest && npm run generate:sitemap:routes && npm run generate:sitemap",
     "build": "react-scripts build",
     "test": "react-scripts test"
   },
   "devDependencies": {
     "concurrently": "^9.2.1",
+    "cross-env": "^7.0.3",
     "vercel": "^34.4.0"
   },
   "browserslist": {

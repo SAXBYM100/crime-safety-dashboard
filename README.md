@@ -7,11 +7,43 @@
    ```bash
    npm install
    ```
-3. Start the development server:
+3. Pull Vercel environment variables:
    ```bash
-   npm start
+   npm run env:pull
    ```
-4. Open: `http://localhost:3000`
+4. Start the development server (CRA + Vercel dev, port 3002):
+   ```bash
+   npm run dev
+   ```
+5. Open: `http://localhost:3000`
+
+Fallback (port 3001):
+```bash
+npm run dev:3001
+```
+
+### PowerShell note
+PowerShell environment variables can persist between sessions. If you previously set `API_PORT`, use the scripts above to force a clean port mapping or run `Remove-Item Env:API_PORT -ErrorAction SilentlyContinue`.
+
+### Local Dev: One-Command Checklist
+1. `npm run env:pull`
+2. `npm run dev`
+3. `curl.exe http://localhost:3000/api/debug-env`
+4. `curl.exe http://localhost:3000/api/health`
+5. `curl.exe http://localhost:3000/api/editorialize-debug`
+6. `curl.exe "http://localhost:3000/api/resolve-location?q=Manchester"`
+7. Gemini smoke test:
+   ```bash
+   curl.exe -X POST http://localhost:3000/api/editorialize ^
+     -H "Content-Type: application/json" ^
+     -d "{\"useGemini\":true,\"location\":{\"name\":\"Manchester\",\"canonicalSlug\":\"manchester\"},\"crimeStats\":{\"monthLabel\":\"Latest\",\"incidentsThisMonth\":120,\"topCategory\":\"anti-social behaviour\",\"categoryShare\":24.5,\"threeMonthAverage\":135,\"trendCoverageMonths\":4},\"guardianHeadlines\":[],\"imageManifest\":[]}"
+   ```
+8. Open `/journal-admin` and generate 1 Manchester (Gemini on).
+
+### Local env notes
+- Serverless functions (Vercel dev) read `GEMINI_API_KEY`, `GUARDIAN_API_KEY`, `PEXELS_API_KEY`, `UNSPLASH_ACCESS_KEY` from `.env.local`.
+- Frontend uses `REACT_APP_*` variables only (no secrets).
+- Debug env endpoint: `http://localhost:3001/api/debug-env`
 
 
 ### Location input modes 

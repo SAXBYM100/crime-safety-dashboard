@@ -3,6 +3,8 @@ import { Link } from "react-router-dom";
 import { fetchJournalPage } from "../services/journalStore";
 import { setMeta, setJsonLd } from "../seo";
 
+const FALLBACK_IMAGE = "/images/cities/drone.jpg";
+
 function toDate(value) {
   if (!value) return null;
   if (value instanceof Date) return value;
@@ -137,6 +139,20 @@ export default function JournalIndex() {
               <span className="journalChip">{item.tags?.[0] || item.locationRef || "UK"}</span>
               <span className="journalDate">{formatRelative(item.publishDate)}</span>
             </div>
+            {item.heroImage?.url && (
+              <div className="imgWrap gallery journalCardThumb">
+                <img
+                  src={item.heroImage.url}
+                  alt={item.heroImage.alt || ""}
+                  loading="lazy"
+                  decoding="async"
+                  onError={(event) => {
+                    event.currentTarget.onerror = null;
+                    event.currentTarget.src = FALLBACK_IMAGE;
+                  }}
+                />
+              </div>
+            )}
             <h2>{item.headline}</h2>
             <p className="journalTeaser">{item.teaser}</p>
             <div className="journalMetaRow">
