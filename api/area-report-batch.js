@@ -1,7 +1,8 @@
 const { rateLimit, getClientIp } = require("./_utils/rateLimit");
-const { getCacheEntry } = require("./_utils/cache");
-const { fetchTrend, getTrendCacheKey } = require("./_utils/trendsCore");
+const { getCacheEntry, setCache, getOrSetInflight } = require("./_utils/cache");
+const { getAreaReport } = require("../lib/providerRegistry");
 
+const CACHE_TTL_MS = 6 * 60 * 60 * 1000;
 const EDGE_TTL_SECONDS = 21600;
 const STALE_SECONDS = 86400;
 
@@ -35,12 +36,16 @@ async function readBody(req) {
   });
 }
 
-function normalizePoints(body) {
-  const raw = Array.isArray(body?.points) ? body.points : Array.isArray(body?.items) ? body.items : [];
+function normalizeItems(body) {
+  const raw = Array.isArray(body?.items) ? body.items : Array.isArray(body?.points) ? body.points : [];
   return raw.map((item) => ({
-    key: String(item?.key || item?.citySlug || item?.slug || "").trim(),
+    key: String(item?.citySlug || item?.key || item?.slug || "").trim(),
     lat: Number(item?.lat),
     lon: Number(item?.lon ?? item?.lng),
+    from: String(item?.from || ""),
+    to: String(item?.to || ""),
+    radius: Number(item?.radius || 1000),
+    name: String(item?.name || ""),
   }));
 }
 
@@ -62,6 +67,10 @@ async function mapWithConcurrency(items, limit, mapper) {
   return results;
 }
 
+function cacheKeyFor(item) {
+  return `area-report:${item.lat.toFixed(5)}:${item.lon.toFixed(5)}:${item.from}:${item.to}:${item.radius}`;
+}
+
 module.exports = async (req, res) => {
   if (req.method !== "POST") {
     res.setHeader("Allow", "POST");
@@ -69,52 +78,48 @@ module.exports = async (req, res) => {
   }
 
   const body = await readBody(req);
-  const points = normalizePoints(body);
-  if (!points.length) {
-    return res.status(400).json({ error: { code: "INVALID_POINTS", message: "points/items is required." } });
+  const items = normalizeItems(body);
+  if (!items.length) {
+    return res.status(400).json({ error: { code: "INVALID_ITEMS", message: "items is required." } });
   }
 
   const results = {};
   let partial = false;
-  const unique = new Map();
 
-  points.forEach((point) => {
-    const key = String(point?.key || "").trim();
-    const lat = Number(point?.lat);
-    const lon = Number(point?.lon);
-    if (!key || !Number.isFinite(lat) || !Number.isFinite(lon)) {
+  const unique = new Map();
+  items.forEach((item) => {
+    const key = item.key || "";
+    if (!key || !Number.isFinite(item.lat) || !Number.isFinite(item.lon)) {
       results[key || `invalid-${Math.random().toString(36).slice(2, 7)}`] = {
         ok: false,
         code: "INVALID_POINT",
-        trend: "unknown",
-        rows: [],
+        message: "Invalid lat/lon.",
       };
       partial = true;
       return;
     }
-    if (Math.abs(lat) > 90 || Math.abs(lon) > 180) {
-      results[key] = { ok: false, code: "OUT_OF_RANGE", trend: "unknown", rows: [] };
+    if (Math.abs(item.lat) > 90 || Math.abs(item.lon) > 180) {
+      results[key] = { ok: false, code: "OUT_OF_RANGE", message: "Coordinates out of range." };
       partial = true;
       return;
     }
-    unique.set(key, { key, lat, lon });
+    unique.set(key, item);
   });
 
   let rateLimited = false;
   let retryAfterSeconds = 60;
   const ip = getClientIp(req);
-  const limit = rateLimit(`trends-batch:${ip}`, 12, 60 * 1000);
-  if (!limit.allowed) {
+  const rl = rateLimit({ key: `area-report-batch:${ip}`, limit: 12, windowMs: 60_000 });
+  if (!rl.ok) {
     rateLimited = true;
-    retryAfterSeconds = Number.isFinite(limit.resetMs) ? Math.max(1, Math.ceil(limit.resetMs / 1000)) : 60;
+    retryAfterSeconds = Number.isFinite(rl.resetMs) ? Math.max(1, Math.ceil(rl.resetMs / 1000)) : 60;
   }
 
-  for (const point of unique.values()) {
-    const cacheKey = getTrendCacheKey(point.lat, point.lon);
+  for (const item of unique.values()) {
+    const cacheKey = cacheKeyFor(item);
     const cachedEntry = getCacheEntry(cacheKey);
     if (cachedEntry) {
-      results[point.key] = {
-        ok: true,
+      results[item.key] = {
         ...cachedEntry.value,
         servedFromCache: true,
         cacheAgeSeconds: Math.max(0, Math.floor((Date.now() - cachedEntry.storedAt) / 1000)),
@@ -124,13 +129,12 @@ module.exports = async (req, res) => {
 
   if (rateLimited) {
     let missing = false;
-    for (const point of unique.values()) {
-      if (!results[point.key]) {
-        results[point.key] = {
+    for (const item of unique.values()) {
+      if (!results[item.key]) {
+        results[item.key] = {
           ok: false,
           code: "RATE_LIMITED_LOCAL",
-          trend: "unknown",
-          rows: [],
+          message: "Too many requests.",
           retryAfterSeconds,
         };
         partial = true;
@@ -144,11 +148,31 @@ module.exports = async (req, res) => {
     return sendPayload(res, { results, partial });
   }
 
-  const remaining = Array.from(unique.values()).filter((point) => !results[point.key]);
-  await mapWithConcurrency(remaining, 2, async (point) => {
-    const data = await fetchTrend(point.lat, point.lon);
-    if (!data.ok) partial = true;
-    results[point.key] = data;
+  const remaining = Array.from(unique.values()).filter((item) => !results[item.key]);
+  await mapWithConcurrency(remaining, 2, async (item) => {
+    const cacheKey = cacheKeyFor(item);
+    try {
+      const report = await getOrSetInflight(cacheKey, async () => {
+        const data = await getAreaReport({
+          lat: item.lat,
+          lon: item.lon,
+          radius: item.radius,
+          from: item.from,
+          to: item.to,
+          name: item.name,
+        });
+        setCache(cacheKey, data, CACHE_TTL_MS);
+        return data;
+      });
+      results[item.key] = report;
+    } catch (err) {
+      partial = true;
+      results[item.key] = {
+        ok: false,
+        code: err?.status === 429 ? "RATE_LIMITED_UPSTREAM" : "UPSTREAM_ERROR",
+        message: err?.message || "Provider failed.",
+      };
+    }
   });
 
   return sendPayload(res, { results, partial });

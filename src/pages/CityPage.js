@@ -64,7 +64,11 @@ export default function CityPage() {
         setStatus("ready");
       } catch (err) {
         if (!mounted) return;
-        setError(err?.message || "Unable to load city intelligence.");
+        if (err?.code && String(err.code).startsWith("RATE_LIMITED")) {
+          setError("Temporary service limit - try again soon.");
+        } else {
+          setError(err?.message || "Unable to load city intelligence.");
+        }
         setStatus("error");
       }
     }
@@ -106,6 +110,7 @@ export default function CityPage() {
   const hasRate = Number.isFinite(intel?.ratePer1000);
   const hasYoy = Number.isFinite(intel?.yoyChange);
   const trendOk = intel?.ok !== false;
+  const showCachedBanner = intel?.servedFromCache || String(intel?.errorCode || "").startsWith("RATE_LIMITED");
 
   return (
     <div className="contentWrap">
@@ -135,7 +140,10 @@ export default function CityPage() {
 
       {status !== "error" && (
         <>
-          {intel?.ok === false && (
+          {showCachedBanner && (
+            <p className="error">Temporary service limit - showing last saved data (if available).</p>
+          )}
+          {intel?.ok === false && !showCachedBanner && (
             <p className="error">Data is temporarily unavailable for this location. Showing limited results.</p>
           )}
           <section className="summaryBar">

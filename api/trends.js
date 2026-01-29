@@ -1,9 +1,21 @@
 const { rateLimit, getClientIp } = require("./_utils/rateLimit");
-const { fetchTrend, CACHE_TTL_MS } = require("./_utils/trendsCore");
+const { getCacheEntry } = require("./_utils/cache");
+const { fetchTrend, getTrendCacheKey } = require("./_utils/trendsCore");
 
-function sendPayload(res, payload) {
-  res.setHeader("Cache-Control", "public, s-maxage=86400, stale-while-revalidate=604800");
-  res.status(200).json(payload);
+const EDGE_TTL_SECONDS = 21600;
+const STALE_SECONDS = 86400;
+
+function setCacheHeaders(res, isShort = false) {
+  if (isShort) {
+    res.setHeader("Cache-Control", "public, s-maxage=60, stale-while-revalidate=600");
+    return;
+  }
+  res.setHeader("Cache-Control", `public, s-maxage=${EDGE_TTL_SECONDS}, stale-while-revalidate=${STALE_SECONDS}`);
+}
+
+function sendPayload(res, payload, status = 200, isShortCache = false) {
+  setCacheHeaders(res, isShortCache);
+  res.status(status).json(payload);
 }
 
 module.exports = async (req, res) => {
@@ -13,12 +25,6 @@ module.exports = async (req, res) => {
   }
 
   const ip = getClientIp(req);
-  const limit = rateLimit(`trends:${ip}`, 40, 60 * 1000);
-  if (!limit.allowed) {
-    res.setHeader("Retry-After", String(Math.ceil(limit.resetMs / 1000)));
-    return sendPayload(res, { ok: false, code: "RATE_LIMITED", trend: "unknown", rows: [] });
-  }
-
   const lat = Number(req.query.lat);
   const lon = Number(req.query.lon);
   if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
@@ -26,6 +32,35 @@ module.exports = async (req, res) => {
   }
   if (Math.abs(lat) > 90 || Math.abs(lon) > 180) {
     return res.status(400).json({ error: { code: "OUT_OF_RANGE", message: "lat must be between -90 and 90, lon between -180 and 180." } });
+  }
+
+  const cacheKey = getTrendCacheKey(lat, lon);
+  const cachedEntry = getCacheEntry(cacheKey);
+  if (cachedEntry) {
+    return sendPayload(
+      res,
+      {
+        ok: true,
+        ...cachedEntry.value,
+        servedFromCache: true,
+        cacheAgeSeconds: Math.max(0, Math.floor((Date.now() - cachedEntry.storedAt) / 1000)),
+      },
+      200
+    );
+  }
+
+  const limit = rateLimit(`trends:${ip}`, 40, 60 * 1000);
+  if (!limit.allowed) {
+    const retryAfterSeconds = Number.isFinite(limit.resetMs)
+      ? Math.max(1, Math.ceil(limit.resetMs / 1000))
+      : 60;
+    res.setHeader("Retry-After", String(retryAfterSeconds));
+    return sendPayload(
+      res,
+      { ok: false, code: "RATE_LIMITED_LOCAL", trend: "unknown", rows: [], retryAfterSeconds },
+      429,
+      true
+    );
   }
 
   const data = await fetchTrend(lat, lon);

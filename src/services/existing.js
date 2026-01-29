@@ -13,16 +13,21 @@ async function fetchJsonOrThrow(url) {
   }
   if (!res.ok) {
     const requestId = json?.requestId;
+    const apiCode = json?.error?.code || json?.code;
     const apiMessage =
       (Array.isArray(json?.errors) && json.errors[0]) || json?.error?.message;
     let msg = apiMessage || `Request failed (HTTP ${res.status} ${res.statusText}).`;
     if (res.status === 400) msg += " Your input may be malformed.";
-    if (res.status === 429) msg += " Rate limit hit. Wait a moment and try again.";
+    if (res.status === 429) msg = "Temporary service limit - try again in a moment.";
     if (res.status === 503) msg += " Service busy. Try again soon.";
-    if (text && !apiMessage) msg += ` Details: ${text.slice(0, 160)}`;
+    if (text && !apiMessage && process.env.NODE_ENV !== "production") {
+      msg += ` Details: ${text.slice(0, 160)}`;
+    }
     if (requestId) msg += ` (ref ${requestId})`;
     const err = new Error(msg);
     err.requestId = requestId;
+    err.code = apiCode || (res.status === 429 ? "RATE_LIMITED" : undefined);
+    err.retryAfterSeconds = Number(res.headers.get("Retry-After")) || json?.retryAfterSeconds || undefined;
     throw err;
   }
   return json;
@@ -92,6 +97,32 @@ export async function fetchAreaReport({ lat, lng, radius = 1000, from = "", to =
 
   const url = `/api/area-report?${params.toString()}`;
   return fetchJsonOrThrow(url);
+}
+
+export async function fetchAreaReportBatch(items = []) {
+  const res = await fetch("/api/area-report-batch", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ items }),
+  });
+  const text = await res.text().catch(() => "");
+  let json = null;
+  if (text) {
+    try {
+      json = JSON.parse(text);
+    } catch {
+      json = null;
+    }
+  }
+  if (!res.ok) {
+    return {
+      ok: false,
+      code: json?.error?.code || json?.code || "UPSTREAM_ERROR",
+      results: json?.results || {},
+      retryAfterSeconds: Number(res.headers.get("Retry-After")) || json?.retryAfterSeconds,
+    };
+  }
+  return json || { results: {}, partial: true };
 }
 
 export async function fetchCrimesForLocation(lat, lng, dateYYYYMM = "") {

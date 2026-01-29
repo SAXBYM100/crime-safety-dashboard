@@ -3,11 +3,25 @@ const batchCache = new Map();
 export async function fetchLast12MonthsCountsByCategory(lat, lng) {
   const url = `/api/trends?lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lng)}`;
   const res = await fetch(url, { headers: { Accept: "application/json" } });
-  if (!res.ok) {
-    return { ok: false, code: "UPSTREAM_ERROR", trend: "unknown", rows: [] };
+  const text = await res.text().catch(() => "");
+  let json = null;
+  if (text) {
+    try {
+      json = JSON.parse(text);
+    } catch {
+      json = null;
+    }
   }
-  const data = await res.json();
-  return data;
+  if (!res.ok) {
+    return {
+      ok: false,
+      code: json?.code || json?.error?.code || "UPSTREAM_ERROR",
+      trend: "unknown",
+      rows: [],
+      retryAfterSeconds: json?.retryAfterSeconds,
+    };
+  }
+  return json || { ok: false, code: "UPSTREAM_ERROR", trend: "unknown", rows: [] };
 }
 
 function normalizePoint(point) {
@@ -29,10 +43,24 @@ export async function fetchTrendsBatch(points = []) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ points: normalized }),
     });
-    if (!res.ok) {
-      return { results: {}, partial: true };
+    const text = await res.text().catch(() => "");
+    let json = null;
+    if (text) {
+      try {
+        json = JSON.parse(text);
+      } catch {
+        json = null;
+      }
     }
-    return res.json();
+    if (!res.ok) {
+      return {
+        results: json?.results || {},
+        partial: true,
+        rateLimited: res.status === 429,
+        retryAfterSeconds: json?.retryAfterSeconds,
+      };
+    }
+    return json || { results: {}, partial: true };
   })();
 
   batchCache.set(key, promise);

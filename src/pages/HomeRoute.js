@@ -123,7 +123,13 @@ export default function HomeRoute() {
         setAmbiguousCandidates(e.candidates);
         setError(e.message || "Multiple matches found. Please choose the intended place.");
       } else {
-        setError("Location could not be resolved.");
+        if (String(e?.code || "").startsWith("RATE_LIMITED")) {
+          setError("Temporary service limit - try again soon.");
+        } else if (e?.code === "NOT_FOUND") {
+          setError("We could not find that location. Try a UK postcode or nearby town.");
+        } else {
+          setError("Location could not be resolved.");
+        }
       }
     } finally {
       if (shouldFinalizeLoading) {
@@ -167,7 +173,13 @@ export default function HomeRoute() {
         setAmbiguousCandidates(e.candidates);
         setError(e.message || "Multiple matches found. Please choose the intended place.");
       } else {
-        setError(e.message || "Unable to resolve that place.");
+        if (String(e?.code || "").startsWith("RATE_LIMITED")) {
+          setError("Temporary service limit - try again soon.");
+        } else if (e?.code === "NOT_FOUND") {
+          setError("We could not find that location. Try a UK postcode or nearby town.");
+        } else {
+          setError(e.message || "Unable to resolve that place.");
+        }
       }
     }
   }

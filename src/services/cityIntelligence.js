@@ -1,5 +1,50 @@
-import { fetchAreaReport } from "./existing";
+import { fetchAreaReport, fetchAreaReportBatch } from "./existing";
 import { fetchLast12MonthsCountsByCategory, fetchTrendsBatch } from "../api/trends";
+
+const CLIENT_CACHE_TTL_MS = 6 * 60 * 60 * 1000;
+const summaryInflight = new Map();
+const intelInflight = new Map();
+
+function canUseStorage() {
+  try {
+    return typeof window !== "undefined" && typeof window.localStorage !== "undefined";
+  } catch (err) {
+    return false;
+  }
+}
+
+function readClientCache(key) {
+  if (!canUseStorage()) return null;
+  try {
+    const raw = window.localStorage.getItem(key);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object") return null;
+    if (!Number.isFinite(parsed.storedAt)) return null;
+    if (Date.now() - parsed.storedAt > CLIENT_CACHE_TTL_MS) return null;
+    return parsed.value || null;
+  } catch (err) {
+    return null;
+  }
+}
+
+function writeClientCache(key, value) {
+  if (!canUseStorage()) return;
+  try {
+    const payload = JSON.stringify({ storedAt: Date.now(), value });
+    window.localStorage.setItem(key, payload);
+  } catch (err) {
+    // ignore storage errors
+  }
+}
+
+function summaryCacheKey(slug) {
+  return `city-summary:${slug}`;
+}
+
+function intelCacheKey(slug) {
+  return `city-intel:${slug}`;
+}
 
 function toMonthString(date) {
   const y = date.getUTCFullYear();
@@ -115,6 +160,8 @@ function buildSummaryFromTrend(city, trend) {
       totalCrimes: null,
       ratePer1000: null,
       topCategory: null,
+      servedFromCache: Boolean(trend?.servedFromCache),
+      cacheAgeSeconds: trend?.cacheAgeSeconds,
     };
   }
   const totalCrimes = sumTotals(rows);
@@ -129,6 +176,8 @@ function buildSummaryFromTrend(city, trend) {
     totalCrimes,
     ratePer1000,
     topCategory,
+    servedFromCache: Boolean(trend?.servedFromCache),
+    cacheAgeSeconds: trend?.cacheAgeSeconds,
   };
 }
 
@@ -191,20 +240,51 @@ export async function fetchCitySummariesBatch(cities = []) {
   const points = cities
     .filter((city) => Number.isFinite(city.lat) && Number.isFinite(city.lng))
     .map((city) => ({ key: city.slug, lat: city.lat, lon: city.lng }));
-  const batch = await fetchTrendsBatch(points);
-  const results = {};
-  cities.forEach((city) => {
-    const trend = batch?.results?.[city.slug] || { ok: false, code: "NO_DATA", trend: "unknown", rows: [] };
-    results[city.slug] = buildSummaryFromTrend(city, trend);
-  });
-  return results;
+  const inflightKey = JSON.stringify(points);
+  if (summaryInflight.has(inflightKey)) return summaryInflight.get(inflightKey);
+
+  const promise = (async () => {
+    let batch = null;
+    try {
+      batch = await fetchTrendsBatch(points);
+    } catch (err) {
+      batch = null;
+    }
+
+    const results = {};
+    cities.forEach((city) => {
+      const trend = batch?.results?.[city.slug] || null;
+      const rateLimited =
+        trend?.code?.toString().startsWith("RATE_LIMITED") || Boolean(batch?.rateLimited);
+      const cached = readClientCache(summaryCacheKey(city.slug));
+
+      let summary = trend
+        ? buildSummaryFromTrend(city, trend)
+        : buildSummaryFromTrend(city, { ok: false, code: "UPSTREAM_ERROR", trend: "unknown", rows: [] });
+
+      if ((summary?.ok === false && rateLimited && cached) || (!trend && cached)) {
+        summary = { ...cached, servedFromCache: true };
+      }
+
+      if (summary && summary.ok !== false) {
+        writeClientCache(summaryCacheKey(city.slug), summary);
+      }
+
+      results[city.slug] = summary;
+    });
+
+    return results;
+  })();
+
+  summaryInflight.set(inflightKey, promise);
+  promise.finally(() => summaryInflight.delete(inflightKey));
+  return promise;
 }
 
 export async function fetchUkAverageRate(cities) {
-  const results = await Promise.allSettled(cities.map((city) => fetchCitySummary(city)));
-  const rates = results
-    .filter((r) => r.status === "fulfilled")
-    .map((r) => r.value.ratePer1000)
+  const summaries = await fetchCitySummariesBatch(cities);
+  const rates = Object.values(summaries)
+    .map((summary) => summary?.ratePer1000)
     .filter((n) => Number.isFinite(n));
   if (!rates.length) return null;
   const sum = rates.reduce((a, b) => a + b, 0);
@@ -212,86 +292,128 @@ export async function fetchUkAverageRate(cities) {
 }
 
 export async function fetchCityIntelligence(city) {
-  let trend = null;
-  let ok = true;
-  let errorCode = null;
-  try {
-    trend = await fetchLast12MonthsCountsByCategory(city.lat, city.lng);
-  } catch (err) {
-    trend = { ok: false, code: "UPSTREAM_ERROR", trend: "unknown", rows: [] };
-  }
-  if (trend?.ok === false) {
-    ok = false;
-    errorCode = trend?.code || "UPSTREAM_ERROR";
-  }
-  if (!Array.isArray(trend?.rows) || trend.rows.length === 0) {
-    ok = false;
-    errorCode = errorCode || "NO_DATA";
-  }
+  const key = intelCacheKey(city.slug || city.name || "city");
+  const cached = readClientCache(key);
+  if (intelInflight.has(key)) return intelInflight.get(key);
 
-  const totalCrimes = sumTotals(trend?.rows || []);
-  const ratePer1000 = Number.isFinite(totalCrimes) && city.population ? (totalCrimes / city.population) * 1000 : null;
-  const categoryTotals = computeCategoryTotals(trend?.rows || []);
-  let topCategory = getTopCategoriesFromTotals(categoryTotals, 1)[0]?.category || null;
-  if (topCategory === "unknown") topCategory = null;
-  const momentum = buildMomentumSummary(trend?.rows || []);
+  const promise = (async () => {
+    let trend = null;
+    let ok = true;
+    let errorCode = null;
+    try {
+      trend = await fetchLast12MonthsCountsByCategory(city.lat, city.lng);
+    } catch (err) {
+      trend = { ok: false, code: "UPSTREAM_ERROR", trend: "unknown", rows: [] };
+    }
+    if (trend?.ok === false) {
+      ok = false;
+      errorCode = trend?.code || "UPSTREAM_ERROR";
+    }
+    if (!Array.isArray(trend?.rows) || trend.rows.length === 0) {
+      ok = false;
+      errorCode = errorCode || "NO_DATA";
+    }
 
-  const lastMonth = getLastFullMonth();
-  const lastMonthKey = toMonthString(lastMonth);
-  const prevYearKey = toMonthString(addMonths(lastMonth, -12));
+    const trendRateLimited = String(trend?.code || "").startsWith("RATE_LIMITED");
+    if (trendRateLimited && cached) {
+      return { ...cached, servedFromCache: true };
+    }
 
-  let latestReport = null;
-  let lastMonthReport = null;
-  let prevYearReport = null;
+    const totalCrimes = sumTotals(trend?.rows || []);
+    const ratePer1000 = Number.isFinite(totalCrimes) && city.population ? (totalCrimes / city.population) * 1000 : null;
+    const categoryTotals = computeCategoryTotals(trend?.rows || []);
+    let topCategory = getTopCategoriesFromTotals(categoryTotals, 1)[0]?.category || null;
+    if (topCategory === "unknown") topCategory = null;
+    const momentum = buildMomentumSummary(trend?.rows || []);
 
-  try {
-    [latestReport, lastMonthReport, prevYearReport] = await Promise.all([
-      fetchAreaReport({ lat: city.lat, lng: city.lng, radius: 1000 }),
-      fetchAreaReport({ lat: city.lat, lng: city.lng, radius: 1000, from: lastMonthKey, to: lastMonthKey }),
-      fetchAreaReport({ lat: city.lat, lng: city.lng, radius: 1000, from: prevYearKey, to: prevYearKey }),
-    ]);
-  } catch (err) {
-    ok = false;
-    errorCode = errorCode || "UPSTREAM_ERROR";
-  }
+    const lastMonth = getLastFullMonth();
+    const lastMonthKey = toMonthString(lastMonth);
+    const prevYearKey = toMonthString(addMonths(lastMonth, -12));
 
-  const latestCrimes = Array.isArray(latestReport?.crimes) ? latestReport.crimes : [];
-  const lastMonthTotal = Array.isArray(lastMonthReport?.crimes) ? lastMonthReport.crimes.length : null;
-  const prevYearTotal = Array.isArray(prevYearReport?.crimes) ? prevYearReport.crimes.length : null;
-  const yoyChange =
-    Number.isFinite(lastMonthTotal) && Number.isFinite(prevYearTotal) && prevYearTotal > 0
-      ? ((lastMonthTotal - prevYearTotal) / prevYearTotal) * 100
-      : null;
+    let latestReport = null;
+    let lastMonthReport = null;
+    let prevYearReport = null;
 
-  const areas = groupCrimesByArea(latestCrimes).map((area) => ({
-    name: area.name,
-    count: area.count,
-    ratePer1000: city.population ? (area.count / city.population) * 1000 : null,
-    topCategory: area.topCategory,
-    center: area.center,
-  }));
+    const items = [
+      { key: "latest", lat: city.lat, lon: city.lng, radius: 1000 },
+      { key: "lastMonth", lat: city.lat, lon: city.lng, radius: 1000, from: lastMonthKey, to: lastMonthKey },
+      { key: "prevYear", lat: city.lat, lon: city.lng, radius: 1000, from: prevYearKey, to: prevYearKey },
+    ];
 
-  const safestAreas = areas
-    .slice()
-    .sort((a, b) => a.count - b.count)
-    .filter((a) => a.count > 0)
-    .slice(0, 3);
-  const highestAreas = areas
-    .slice()
-    .sort((a, b) => b.count - a.count)
-    .slice(0, 3);
+    let reportBatch = null;
+    try {
+      reportBatch = await fetchAreaReportBatch(items);
+    } catch (err) {
+      reportBatch = null;
+    }
 
-  return {
-    ok,
-    errorCode,
-    trend,
-    totalCrimes,
-    ratePer1000,
-    yoyChange,
-    topCategory,
-    safestAreas,
-    highestAreas,
-    momentum,
-    lastMonthKey,
-  };
+    const batchRateLimited =
+      reportBatch?.code?.toString().startsWith("RATE_LIMITED") ||
+      Object.values(reportBatch?.results || {}).some((r) => r?.code?.toString().startsWith("RATE_LIMITED"));
+
+    if (batchRateLimited && cached) {
+      return { ...cached, servedFromCache: true };
+    }
+
+    if (reportBatch?.ok === false) {
+      ok = false;
+      errorCode = errorCode || reportBatch.code || "UPSTREAM_ERROR";
+    }
+
+    if (reportBatch?.results) {
+      latestReport = reportBatch.results.latest || null;
+      lastMonthReport = reportBatch.results.lastMonth || null;
+      prevYearReport = reportBatch.results.prevYear || null;
+    }
+
+    const latestCrimes = Array.isArray(latestReport?.crimes) ? latestReport.crimes : [];
+    const lastMonthTotal = Array.isArray(lastMonthReport?.crimes) ? lastMonthReport.crimes.length : null;
+    const prevYearTotal = Array.isArray(prevYearReport?.crimes) ? prevYearReport.crimes.length : null;
+    const yoyChange =
+      Number.isFinite(lastMonthTotal) && Number.isFinite(prevYearTotal) && prevYearTotal > 0
+        ? ((lastMonthTotal - prevYearTotal) / prevYearTotal) * 100
+        : null;
+
+    const areas = groupCrimesByArea(latestCrimes).map((area) => ({
+      name: area.name,
+      count: area.count,
+      ratePer1000: city.population ? (area.count / city.population) * 1000 : null,
+      topCategory: area.topCategory,
+      center: area.center,
+    }));
+
+    const safestAreas = areas
+      .slice()
+      .sort((a, b) => a.count - b.count)
+      .filter((a) => a.count > 0)
+      .slice(0, 3);
+    const highestAreas = areas
+      .slice()
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 3);
+
+    const result = {
+      ok,
+      errorCode,
+      trend,
+      totalCrimes,
+      ratePer1000,
+      yoyChange,
+      topCategory,
+      safestAreas,
+      highestAreas,
+      momentum,
+      lastMonthKey,
+    };
+
+    if (result.ok !== false && (Array.isArray(result.trend?.rows) || latestCrimes.length > 0)) {
+      writeClientCache(key, result);
+    }
+
+    return result;
+  })();
+
+  intelInflight.set(key, promise);
+  promise.finally(() => intelInflight.delete(key));
+  return promise;
 }

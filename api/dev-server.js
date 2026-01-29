@@ -1,17 +1,21 @@
 const http = require("http");
 
 const areaReport = require("./area-report");
+const areaReportBatch = require("./area-report-batch");
 const trends = require("./trends");
 const trendsBatch = require("./trends-batch");
 const resolveLocation = require("./resolve-location");
 const guardian = require("./guardian");
+const health = require("./health");
 
 const routes = {
   "/api/area-report": areaReport,
+  "/api/area-report-batch": areaReportBatch,
   "/api/trends": trends,
   "/api/trends-batch": trendsBatch,
   "/api/resolve-location": resolveLocation,
   "/api/guardian": guardian,
+  "/api/health": health,
 };
 
 const port = Number(process.env.API_DEV_PORT) || 3001;

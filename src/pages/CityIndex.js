@@ -76,6 +76,7 @@ export default function CityIndex() {
           loadImageManifest(),
         ]);
         if (!mounted) return;
+        const usedCache = Object.values(batchSummaries || {}).some((summary) => summary?.servedFromCache);
         const rates = Object.values(batchSummaries)
           .map((item) => item.ratePer1000)
           .filter((value) => Number.isFinite(value));
@@ -106,7 +107,7 @@ export default function CityIndex() {
         setSummaries(batchSummaries);
         setCityImages(imageMap);
         setUkAverage(nextUkAverage);
-        setStatus("ready");
+        setStatus(usedCache ? "cached" : "ready");
       } catch (err) {
         if (!mounted) return;
         setStatus("error");
@@ -207,6 +208,7 @@ export default function CityIndex() {
           return (
             <div key={`summary-${city.slug}`} className="summaryCard">
               <div className="summaryLabel">{city.name}</div>
+              {summary?.servedFromCache && <span className="summaryBadge">Cached</span>}
               <div className="summaryValue">
                 {Number.isFinite(summary?.ratePer1000) ? summary.ratePer1000.toFixed(1) : "—"}
               </div>
@@ -222,6 +224,9 @@ export default function CityIndex() {
         })}
       </div>
 
+      {status === "cached" && (
+        <p className="error">Temporary service limit - showing last saved data (if available).</p>
+      )}
       {status === "error" && <p className="error">City summaries are temporarily unavailable.</p>}
 
       <div className="contentCard">

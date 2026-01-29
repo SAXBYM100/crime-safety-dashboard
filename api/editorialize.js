@@ -20,6 +20,14 @@ function safeDotenv() {
 }
 
 function sendJson(res, status, payload) {
+  const retryAfterSeconds = Number.isFinite(payload?.retryAfterSeconds)
+    ? payload.retryAfterSeconds
+    : Number.isFinite(payload?.retryAfterMs)
+      ? Math.ceil(payload.retryAfterMs / 1000)
+      : null;
+  if (status === 429 && Number.isFinite(retryAfterSeconds)) {
+    res.setHeader("Retry-After", String(Math.max(1, retryAfterSeconds)));
+  }
   res.status(status).json(payload);
 }
 
@@ -599,12 +607,15 @@ function createHandler() {
         const now = Date.now();
 
         if (now - last < GEMINI_COOLDOWN_MS) {
+          const retryAfterMs = GEMINI_COOLDOWN_MS - (now - last);
+          const retryAfterSeconds = Math.max(1, Math.ceil(retryAfterMs / 1000));
           return {
             status: 429,
             payload: {
-              error: "RATE_LIMITED",
+              error: "RATE_LIMITED_GEMINI",
               message: "Editorial engine busy. Try again soon.",
-              retryAfterMs: GEMINI_COOLDOWN_MS - (now - last),
+              retryAfterMs,
+              retryAfterSeconds,
             },
           };
         }
@@ -718,12 +729,13 @@ function createHandler() {
                 break;
               }
               if (response.status === 429) {
+                const retryAfterSeconds = getRetryAfterSeconds(response);
                 return {
                   status: 429,
                   payload: {
-                    error: "RATE_LIMITED",
+                    error: "RATE_LIMITED_GEMINI",
                     message: "Editorial engine busy. Try again soon.",
-                    retryAfter: getRetryAfterSeconds(response),
+                    retryAfterSeconds,
                   },
                 };
               }

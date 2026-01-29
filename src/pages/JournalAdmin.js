@@ -68,7 +68,9 @@ export default function JournalAdmin() {
   const formatEditorialError = (error) => {
     const payload = error?.payload || {};
     const code = payload?.error || error?.message || "";
-    if (code === "RATE_LIMITED") return "Editorial engine busy — try again in a minute.";
+    if (code === "RATE_LIMITED" || code === "RATE_LIMITED_GEMINI") {
+      return "Editorial engine busy — try again in a minute.";
+    }
     if (code === "GEMINI_INVALID_JSON") return "Generation failed — output invalid. Try again.";
     if (code === "GEMINI_SCHEMA_INVALID") return "Generation failed — incomplete output. Try again.";
     if (code === "MEDIA_VALIDATION_FAILED") return "Generation failed — media invalid. Try again.";
@@ -129,7 +131,7 @@ export default function JournalAdmin() {
         const payload = error?.payload || {};
         if (payload?.error === "EDITORIALIZE_CRASH") {
           setBanner("Editorial engine failed. Try again.");
-        } else if (payload?.error === "RATE_LIMITED") {
+        } else if (payload?.error === "RATE_LIMITED" || payload?.error === "RATE_LIMITED_GEMINI") {
           setBanner("Editorial engine busy — try again in a minute.");
         } else if (friendly.includes("Gemini not configured")) {
           setBanner(friendly);

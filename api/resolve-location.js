@@ -1,9 +1,9 @@
 const { randomUUID } = require("crypto");
 const { rateLimit, getClientIp } = require("./_utils/rateLimit");
-const { getCache, setCache } = require("./_utils/cache");
+const { getCacheEntry, setCache } = require("./_utils/cache");
 const { fetchWithRetry, logDevError } = require("../lib/serverHttp");
 
-const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
+const CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 const DEV_LOG = process.env.NODE_ENV !== "production";
 
 const SETTLEMENT_TYPES = new Set([
@@ -213,13 +213,6 @@ module.exports = async (req, res) => {
     return sendError(res, 405, randomUUID(), "", "place", "METHOD_NOT_ALLOWED", "Only GET is supported.");
   }
 
-  const ip = getClientIp(req);
-  const limit = rateLimit(`resolve-location:${ip}`, 40, 60 * 1000);
-  if (!limit.allowed) {
-    res.setHeader("Retry-After", String(Math.ceil(limit.resetMs / 1000)));
-    return sendError(res, 429, randomUUID(), "", "place", "RATE_LIMITED", "Too many requests. Please try again soon.");
-  }
-
   const requestId = randomUUID();
   const rawQuery = req.query.q;
   if (typeof rawQuery !== "string") {
@@ -234,19 +227,24 @@ module.exports = async (req, res) => {
   try {
     const inputNormalized = normalizeInput(q);
     const cacheKey = `resolve:${inputNormalized.toLowerCase()}`;
-    const cached = getCache(cacheKey);
-    if (cached) {
+    const cachedEntry = getCacheEntry(cacheKey);
+    if (cachedEntry) {
       console.log("[resolve-location]", {
         requestId,
         rawQuery: q,
         inputNormalized,
-        detectedType: cached.type,
+        detectedType: cachedEntry.value?.type,
         outcome: "success",
-        provider: cached.sources?.[0] || "cache",
+        provider: cachedEntry.value?.sources?.[0] || "cache",
         cache: "hit",
       });
-      res.setHeader("Cache-Control", "public, s-maxage=86400, stale-while-revalidate=172800");
-      return res.json({ requestId, ...cached });
+      res.setHeader("Cache-Control", "public, s-maxage=604800, stale-while-revalidate=1209600");
+      return res.json({
+        requestId,
+        ...cachedEntry.value,
+        servedFromCache: true,
+        cacheAgeSeconds: Math.max(0, Math.floor((Date.now() - cachedEntry.storedAt) / 1000)),
+      });
     }
 
     if (isLikelyLatLngPair(q)) {
@@ -273,7 +271,7 @@ module.exports = async (req, res) => {
           outcome: "success",
           provider: "manual",
         });
-        res.setHeader("Cache-Control", "public, s-maxage=86400, stale-while-revalidate=172800");
+        res.setHeader("Cache-Control", "public, s-maxage=604800, stale-while-revalidate=1209600");
         return res.json({ requestId, ...payload });
       } catch (err) {
         console.log("[resolve-location]", {
@@ -296,6 +294,22 @@ module.exports = async (req, res) => {
           ["manual"]
         );
       }
+    }
+
+    const ip = getClientIp(req);
+    const limit = rateLimit({ key: `resolve-location:${ip}`, limit: 40, windowMs: 60_000 });
+    if (!limit.allowed) {
+      const retryAfterSeconds = Number.isFinite(limit.resetMs) ? Math.max(1, Math.ceil(limit.resetMs / 1000)) : 60;
+      res.setHeader("Retry-After", String(retryAfterSeconds));
+      return sendError(
+        res,
+        429,
+        randomUUID(),
+        "",
+        "place",
+        "RATE_LIMITED_LOCAL",
+        "Too many requests. Please try again soon."
+      );
     }
 
     const extractedPostcode = extractUKPostcode(q);
@@ -347,15 +361,21 @@ module.exports = async (req, res) => {
         outcome: "success",
         provider: "postcodes.io",
       });
-      res.setHeader("Cache-Control", "public, s-maxage=86400, stale-while-revalidate=172800");
+      res.setHeader("Cache-Control", "public, s-maxage=604800, stale-while-revalidate=1209600");
       return res.json({ requestId, ...payload });
     }
 
     const encoded = encodeURIComponent(q);
-    const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&limit=10&addressdetails=1&namedetails=1&countrycodes=gb&viewbox=-8.6,60.9,1.8,49.8&bounded=1&q=${encoded}`;
-    const results = await fetchJsonOrThrow(url, {
+    const boundedUrl = `https://nominatim.openstreetmap.org/search?format=jsonv2&limit=10&addressdetails=1&namedetails=1&countrycodes=gb&viewbox=-8.6,60.9,1.8,49.8&bounded=1&q=${encoded}`;
+    let results = await fetchJsonOrThrow(boundedUrl, {
       "User-Agent": "crime-safety-dashboard/1.0 (https://crime-safety-dashboard.vercel.app)",
     });
+    if (!Array.isArray(results) || results.length === 0) {
+      const fallbackUrl = `https://nominatim.openstreetmap.org/search?format=jsonv2&limit=8&addressdetails=1&namedetails=1&countrycodes=gb&q=${encoded}`;
+      results = await fetchJsonOrThrow(fallbackUrl, {
+        "User-Agent": "crime-safety-dashboard/1.0 (https://crime-safety-dashboard.vercel.app)",
+      });
+    }
 
     if (!Array.isArray(results) || results.length === 0) {
       console.log("[resolve-location]", {
@@ -427,7 +447,7 @@ module.exports = async (req, res) => {
           outcome: "success",
           provider: "nominatim",
         });
-        res.setHeader("Cache-Control", "public, s-maxage=86400, stale-while-revalidate=172800");
+        res.setHeader("Cache-Control", "public, s-maxage=604800, stale-while-revalidate=1209600");
         return res.json({ requestId, ...payload });
       }
       const message =
@@ -486,10 +506,18 @@ module.exports = async (req, res) => {
       outcome: "success",
       provider: "nominatim",
     });
-    res.setHeader("Cache-Control", "public, s-maxage=86400, stale-while-revalidate=172800");
+    res.setHeader("Cache-Control", "public, s-maxage=604800, stale-while-revalidate=1209600");
     return res.json({ requestId, ...payload });
   } catch (err) {
     const status = err.status || 500;
+    const code = status === 429 ? "RATE_LIMITED_UPSTREAM" : "GEOCODE_FAILED";
+    const message =
+      status === 429
+        ? "Geocoding service is rate limited. Please try again soon."
+        : err.message || "Geocoding failed.";
+    if (status === 429) {
+      res.setHeader("Retry-After", "60");
+    }
     logDevError("resolve-location", err, { query: q, status, requestId });
     console.log("[resolve-location]", {
       requestId,
@@ -506,8 +534,8 @@ module.exports = async (req, res) => {
       requestId,
       normalizeInput(q),
       "place",
-      "GEOCODE_FAILED",
-      err.message || "Geocoding failed.",
+      code,
+      message,
       ["nominatim"]
     );
   }

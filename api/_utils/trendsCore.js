@@ -1,8 +1,7 @@
-const { getCache, setCache } = require("./cache");
+const { getCacheEntry, setCache, getOrSetInflight } = require("./cache");
 const { fetchJsonWithRetry, logDevError } = require("../../lib/serverHttp");
 
-const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
-const inflight = new Map();
+const CACHE_TTL_MS = 6 * 60 * 60 * 1000;
 
 function ym(d) {
   const y = d.getUTCFullYear();
@@ -34,11 +33,14 @@ async function fetchMonth(lat, lon, yyyymm) {
     );
     return { ok: true, crimes: Array.isArray(json) ? json : [] };
   } catch (err) {
-    if (err?.status === 404 || err?.status === 429 || err?.status === 503) {
-      return { ok: false, crimes: [] };
+    if (err?.status === 404 || err?.status === 503) {
+      return { ok: false, reason: "UPSTREAM_ERROR", crimes: [] };
+    }
+    if (err?.status === 429) {
+      return { ok: false, reason: "RATE_LIMITED_UPSTREAM", crimes: [] };
     }
     logDevError("trends.fetch", err, { month: yyyymm, lat, lon });
-    return { ok: false, crimes: [] };
+    return { ok: false, reason: "UPSTREAM_ERROR", crimes: [] };
   }
 }
 
@@ -63,9 +65,13 @@ async function mapWithConcurrency(items, limit, mapper) {
 async function buildTrendData(lat, lon) {
   const months = last12Months();
   let errorCount = 0;
+  let rateLimitCount = 0;
   const series = await mapWithConcurrency(months, 4, async (m) => {
     const result = await fetchMonth(lat, lon, m);
-    if (!result.ok) errorCount += 1;
+    if (!result.ok) {
+      errorCount += 1;
+      if (result.reason === "RATE_LIMITED_UPSTREAM") rateLimitCount += 1;
+    }
     const crimes = result.crimes || [];
     const counts = {};
     for (const c of crimes) {
@@ -92,7 +98,8 @@ async function buildTrendData(lat, lon) {
 
   const totalCrimes = rows.reduce((acc, row) => acc + row.total, 0);
   if (errorCount === months.length && totalCrimes === 0) {
-    return { ok: false, code: "UPSTREAM_ERROR", trend: "unknown", rows: [] };
+    const code = rateLimitCount === errorCount ? "RATE_LIMITED_UPSTREAM" : "UPSTREAM_ERROR";
+    return { ok: false, code, trend: "unknown", rows: [] };
   }
 
   return {
@@ -102,16 +109,23 @@ async function buildTrendData(lat, lon) {
   };
 }
 
-async function fetchTrend(lat, lon) {
-  const cacheKey = `trends:${lat.toFixed(5)}:${lon.toFixed(5)}`;
-  const cached = getCache(cacheKey);
-  if (cached) return { ok: true, ...cached };
+function getTrendCacheKey(lat, lon) {
+  return `trends:${lat.toFixed(5)}:${lon.toFixed(5)}`;
+}
 
-  if (inflight.has(cacheKey)) {
-    return inflight.get(cacheKey);
+async function fetchTrend(lat, lon) {
+  const cacheKey = getTrendCacheKey(lat, lon);
+  const cachedEntry = getCacheEntry(cacheKey);
+  if (cachedEntry) {
+    return {
+      ok: true,
+      ...cachedEntry.value,
+      servedFromCache: true,
+      cacheAgeSeconds: Math.max(0, Math.floor((Date.now() - cachedEntry.storedAt) / 1000)),
+    };
   }
 
-  const promise = (async () => {
+  return getOrSetInflight(cacheKey, async () => {
     try {
       const data = await buildTrendData(lat, lon);
       if (data?.ok === false) return data;
@@ -119,16 +133,12 @@ async function fetchTrend(lat, lon) {
       return { ok: true, ...data };
     } catch (error) {
       return { ok: false, code: "UPSTREAM_ERROR", trend: "unknown", rows: [] };
-    } finally {
-      inflight.delete(cacheKey);
     }
-  })();
-
-  inflight.set(cacheKey, promise);
-  return promise;
+  });
 }
 
 module.exports = {
   fetchTrend,
   CACHE_TTL_MS,
+  getTrendCacheKey,
 };
