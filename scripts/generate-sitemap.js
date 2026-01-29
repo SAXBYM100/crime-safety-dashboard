@@ -4,7 +4,8 @@ const path = require("path");
 require("dotenv").config({ path: path.join(__dirname, "..", ".env.local") });
 require("dotenv").config({ path: path.join(__dirname, "..", ".env") });
 
-const DEFAULT_SITE_URL = "https://area-iq.com";
+const { CANONICAL_BASE, normalizeUrl, normalizePath } = require("./normalize-url");
+const DEFAULT_SITE_URL = CANONICAL_BASE;
 const ROUTES_JSON_PATH = path.join(__dirname, "..", "src", "seo", "sitemapRoutes.json");
 
 const FALLBACK_ROUTES = [
@@ -30,7 +31,7 @@ const FALLBACK_ROUTES = [
 function getSiteUrl() {
   const fromEnv = process.env.REACT_APP_SITE_URL;
   const siteUrl = (fromEnv || DEFAULT_SITE_URL).trim();
-  return siteUrl.endsWith("/") ? siteUrl.slice(0, -1) : siteUrl;
+  return normalizeUrl(siteUrl);
 }
 
 function readRoutes() {
@@ -60,10 +61,10 @@ function buildSitemapXml(siteUrl, routes) {
 
   const urlNodes = routes
     .filter(Boolean)
-    .map((p) => (p.startsWith("/") ? p : `/${p}`))
-    .map((p) => `${siteUrl}${p}`)
+    .map((p) => normalizePath(p))
+    .map((p) => normalizeUrl(new URL(p, siteUrl).toString()))
     .map((loc) => {
-      return `  <url>\n    <loc>${xmlEscape(loc)}</loc>\n    <lastmod>${now}</lastmod>\n    <changefreq>weekly</changefreq>\n    <priority>${loc === `${siteUrl}/` ? "1.0" : "0.7"}</priority>\n  </url>`;
+      return `  <url>\n    <loc>${xmlEscape(loc)}</loc>\n    <lastmod>${now}</lastmod>\n    <changefreq>weekly</changefreq>\n    <priority>${loc === normalizeUrl(`${siteUrl}/`) ? "1.0" : "0.7"}</priority>\n  </url>`;
     })
     .join("\n");
 

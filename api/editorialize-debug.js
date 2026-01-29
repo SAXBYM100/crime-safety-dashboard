@@ -5,14 +5,11 @@ function sendJson(res, status, payload) {
   res.status(status).json(payload);
 }
 
-function hasFetch() {
-  if (typeof globalThis.fetch === "function") return true;
-  try {
-    require("node-fetch");
-    return true;
-  } catch (error) {
-    return false;
-  }
+function normalizeModelName(value) {
+  if (!value) return "";
+  const trimmed = String(value).trim();
+  if (!trimmed) return "";
+  return trimmed.startsWith("models/") ? trimmed : `models/${trimmed}`;
 }
 
 module.exports = async (req, res) => {
@@ -21,20 +18,17 @@ module.exports = async (req, res) => {
     return sendJson(res, 405, { error: "METHOD_NOT_ALLOWED" });
   }
 
-  let hasMediaValidator = false;
-  try {
-    const media = require("../lib/mediaValidator");
-    hasMediaValidator = typeof media.validateAndNormalizeMedia === "function";
-  } catch (error) {
-    hasMediaValidator = false;
-  }
+  const override = normalizeModelName(process.env.GEMINI_MODEL);
+  const cacheName = globalThis.__EDITORIALIZE_MODEL_CACHE__?.name || null;
+  const cacheFetchedAt = globalThis.__EDITORIALIZE_MODEL_CACHE__?.fetchedAt || 0;
+  const cacheAgeMs = cacheFetchedAt ? Date.now() - cacheFetchedAt : null;
 
   return sendJson(res, 200, {
-    ok: true,
-    hasGemini: Boolean(process.env.GEMINI_API_KEY),
-    hasGuardian: Boolean(process.env.GUARDIAN_API_KEY),
-    hasMediaValidator,
-    hasFetch: hasFetch(),
+    hasFetch: typeof globalThis.fetch === "function",
     nodeVersion: process.version,
+    geminiKeyPresent: Boolean(process.env.GEMINI_API_KEY),
+    pickedModel: cacheName,
+    modelOverride: override || null,
+    cacheAgeMs,
   });
 };

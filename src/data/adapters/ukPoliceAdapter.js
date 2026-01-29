@@ -50,7 +50,12 @@ export async function ukPoliceAdapter(baseProfile, options = {}) {
   try {
     if (requestId) trackStart?.(requestId);
     const trend = await fetchLast12MonthsCountsByCategory(geo.lat, geo.lng);
-    safety.trend = trend || { rows: [] };
+    if (trend?.ok === false) {
+      safety.errors.trend = "Trend data is temporarily unavailable.";
+      safety.trend = { rows: [] };
+    } else {
+      safety.trend = trend || { rows: [] };
+    }
   } catch (err) {
     safety.errors.trend = "Trend data is temporarily unavailable.";
   } finally {

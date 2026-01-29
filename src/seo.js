@@ -1,4 +1,4 @@
-const CANONICAL_BASE = "https://area-iq.com";
+import { CANONICAL_BASE, normalizeUrl, normalizePath } from "./utils/normalizeUrl";
 
 function upsertMeta(name, content) {
   if (content === undefined || content === null) return;
@@ -33,17 +33,6 @@ function upsertLink(rel, href) {
   tag.setAttribute("href", href);
 }
 
-function normalizeUrl(urlString, includeQuery = false) {
-  try {
-    const url = new URL(urlString);
-    url.hash = "";
-    if (!includeQuery) url.search = "";
-    return url.toString();
-  } catch {
-    return urlString;
-  }
-}
-
 function buildCanonical({
   canonicalUrl,
   canonicalPath,
@@ -52,12 +41,12 @@ function buildCanonical({
   if (canonicalUrl) return normalizeUrl(canonicalUrl, includeQuery);
 
   if (canonicalPath) {
-    const path = canonicalPath.startsWith("/") ? canonicalPath : `/${canonicalPath}`;
+    const path = normalizePath(canonicalPath);
     return normalizeUrl(`${CANONICAL_BASE}${path}`, includeQuery);
   }
 
   if (typeof window === "undefined") return "";
-  const path = window.location.pathname || "/";
+  const path = normalizePath(window.location.pathname || "/");
   const search = includeQuery ? window.location.search || "" : "";
   return normalizeUrl(`${CANONICAL_BASE}${path}${search}`, includeQuery);
 }
@@ -108,9 +97,11 @@ export function setMeta(arg1, arg2, arg3) {
     canonical,
   } = options;
 
+  const robotsValue = robots || "index,follow";
+
   if (title) document.title = title;
   upsertMeta("description", description);
-  if (robots) upsertMeta("robots", robots);
+  upsertMeta("robots", robotsValue);
 
   const canonicalHref = buildCanonical({
     canonicalUrl: canonicalUrl || canonical,
@@ -145,6 +136,6 @@ export function toBrandedUrl(urlOrPath, includeQuery = false) {
   if (/^https?:\/\//i.test(urlOrPath)) {
     return normalizeUrl(urlOrPath, includeQuery);
   }
-  const path = urlOrPath.startsWith("/") ? urlOrPath : `/${urlOrPath}`;
+  const path = normalizePath(urlOrPath);
   return normalizeUrl(`${CANONICAL_BASE}${path}`, includeQuery);
 }

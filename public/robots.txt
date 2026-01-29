@@ -1,3 +1,4 @@
 User-agent: *
 Allow: /
-Sitemap: https://crime-safety-dashboard.vercel.app/sitemap.xml
+Sitemap: https://www.area-iq.com/sitemap.xml
+

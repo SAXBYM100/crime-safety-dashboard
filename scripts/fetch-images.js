@@ -1,14 +1,15 @@
 // scripts/fetch-images.js
-import fs from "fs";
-import path from "path";
-import crypto from "crypto";
-import dotenv from "dotenv";
-import { fileURLToPath } from "url";
+/* eslint-disable no-console */
+const fs = require("fs");
+const path = require("path");
+const crypto = require("crypto");
+const dotenv = require("dotenv");
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PROJECT_ROOT = path.resolve(__dirname, "..");
 dotenv.config({ path: path.join(PROJECT_ROOT, ".env.local") });
 dotenv.config({ path: path.join(PROJECT_ROOT, ".env") });
+
+const fetchFn = global.fetch || ((...args) => import("node-fetch").then((m) => m.default(...args)));
 
 // --------------------
 // ENV
@@ -21,6 +22,9 @@ const UNSPLASH_ACCESS_KEY = process.env.UNSPLASH_ACCESS_KEY;
 // --------------------
 const ROOT = path.join(process.cwd(), "public", "image-bank");
 const MANIFEST_PATH = path.join(process.cwd(), "scripts", "image-manifest.json");
+const CITIES_PATH = path.join(PROJECT_ROOT, "src", "data", "cities.json");
+
+const ALLOWED_EXT = new Set([".jpg", ".jpeg", ".png", ".webp", ".avif"]);
 
 // --------------------
 // HELPERS
@@ -56,6 +60,65 @@ function safeName(s) {
     .slice(0, 60);
 }
 
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function isRateLimitedError(err) {
+  const msg = String(err?.message || "");
+  return /429|rate limit/i.test(msg);
+}
+
+async function withRetry(fn, { retries = 3, baseDelayMs = 500 } = {}) {
+  let attempt = 0;
+  while (true) {
+    try {
+      return await fn();
+    } catch (err) {
+      attempt += 1;
+      if (attempt > retries || !isRateLimitedError(err)) throw err;
+      const jitter = Math.floor(Math.random() * 250);
+      const wait = baseDelayMs * 2 ** (attempt - 1) + jitter;
+      console.warn(`Rate limited. Retrying in ${wait}ms...`);
+      await sleep(wait);
+    }
+  }
+}
+
+function countExistingImages(dir) {
+  if (!fs.existsSync(dir)) return 0;
+  const entries = fs.readdirSync(dir, { withFileTypes: true });
+  return entries.filter((entry) => {
+    if (!entry.isFile()) return false;
+    return ALLOWED_EXT.has(path.extname(entry.name).toLowerCase());
+  }).length;
+}
+
+function loadCityMap() {
+  if (!fs.existsSync(CITIES_PATH)) return {};
+  try {
+    return JSON.parse(fs.readFileSync(CITIES_PATH, "utf8"));
+  } catch (err) {
+    console.warn("Failed to parse cities.json", err);
+    return {};
+  }
+}
+
+function parseArgs(argv) {
+  const args = {};
+  argv.forEach((arg) => {
+    if (arg.startsWith("--")) {
+      const [key, rawValue = "true"] = arg.replace(/^--/, "").split("=");
+      args[key] = rawValue;
+    } else if (!args._) {
+      args._ = [arg];
+    } else {
+      args._.push(arg);
+    }
+  });
+  return args;
+}
+
 // --------------------
 // EXTENSION HELPERS
 // --------------------
@@ -84,7 +147,7 @@ function extFromUrl(url) {
 // DOWNLOAD
 // --------------------
 async function downloadToFile(url, filePathWithoutExt) {
-  const res = await fetch(url, {
+  const res = await fetchFn(url, {
     headers: {
       Accept: "image/avif,image/webp,image/png,image/jpeg,image/*,*/*;q=0.8",
     },
@@ -115,7 +178,7 @@ async function searchPexels(query, perPage = 15) {
     query
   )}&per_page=${perPage}&orientation=landscape`;
 
-  const res = await fetch(url, {
+  const res = await fetchFn(url, {
     headers: { Authorization: PEXELS_API_KEY },
   });
 
@@ -139,7 +202,7 @@ async function searchUnsplash(query, perPage = 15) {
     query
   )}&per_page=${perPage}&orientation=landscape`;
 
-  const res = await fetch(url, {
+  const res = await fetchFn(url, {
     headers: { Authorization: `Client-ID ${UNSPLASH_ACCESS_KEY}` },
   });
 
@@ -156,37 +219,16 @@ async function searchUnsplash(query, perPage = 15) {
   }));
 }
 
-// --------------------
-// MAIN
-// --------------------
-async function run() {
-  // Usage:
-  // node scripts/fetch-images.js "manchester uk skyline" cities/manchester 12 pexels
-  const [query, destSubdir, countStr, provider = "pexels"] =
-    process.argv.slice(2);
+async function fetchResults(provider, query, count) {
+  const perPage = Math.max(count * 2, 20);
+  const search = provider === "unsplash" ? searchUnsplash : searchPexels;
+  return withRetry(() => search(query, perPage));
+}
 
-  const count = Number(countStr || 10);
-
-  if (!query || !destSubdir) {
-    console.log(`
-Usage:
-node scripts/fetch-images.js "<query>" <destSubdir> [count] [pexels|unsplash]
-
-Example:
-node scripts/fetch-images.js "manchester uk city centre at dusk" cities/manchester 12 pexels
-`);
-    process.exit(1);
-  }
-
+async function downloadResults({ query, destSubdir, count, provider, manifest }) {
   const destDir = path.join(ROOT, destSubdir);
   ensureDir(destDir);
-
-  const manifest = loadManifest();
-
-  const results =
-    provider === "unsplash"
-      ? await searchUnsplash(query, Math.max(count * 2, 20))
-      : await searchPexels(query, Math.max(count * 2, 20));
+  const results = await fetchResults(provider, query, count);
 
   let saved = 0;
 
@@ -200,16 +242,9 @@ node scripts/fetch-images.js "manchester uk city centre at dusk" cities/manchest
     const filePathNoExt = path.join(destDir, baseName);
 
     try {
-      const { finalPath, ext } = await downloadToFile(
-        item.downloadUrl,
-        filePathNoExt
-      );
-
+      const { finalPath, ext } = await downloadToFile(item.downloadUrl, filePathNoExt);
       const filename = `${baseName}${ext}`;
-      const publicUrl = `/image-bank/${destSubdir}/${filename}`.replace(
-        /\\/g,
-        "/"
-      );
+      const publicUrl = `/image-bank/${destSubdir}/${filename}`.replace(/\\/g, "/");
 
       manifest.items.push({
         id,
@@ -233,6 +268,128 @@ node scripts/fetch-images.js "manchester uk city centre at dusk" cities/manchest
     }
   }
 
+  return saved;
+}
+
+function buildCityQueries(cityName) {
+  const name = cityName || "UK city";
+  return [
+    `${name} uk skyline`,
+    `${name} uk city centre`,
+    `${name} uk aerial view`,
+    `${name} uk streets`,
+  ];
+}
+
+async function seedCities({ cities, min = 3, provider = "pexels" }) {
+  const manifest = loadManifest();
+  const cityMap = loadCityMap();
+
+  for (const slug of cities) {
+    const city = cityMap?.[slug];
+    const displayName = city?.name || slug;
+    const destSubdir = `cities/${slug}`;
+    const destDir = path.join(ROOT, destSubdir);
+    ensureDir(destDir);
+
+    const existing = countExistingImages(destDir);
+    if (existing >= min) {
+      console.log(`Skip ${slug}: already has ${existing} images.`);
+      continue;
+    }
+
+    const needed = Math.max(min - existing, 0);
+    console.log(`Seeding ${slug}: need ${needed} images.`);
+
+    let saved = 0;
+    const queries = buildCityQueries(displayName);
+    for (const query of queries) {
+      if (saved >= needed) break;
+      try {
+        const remaining = needed - saved;
+        const got = await downloadResults({
+          query,
+          destSubdir,
+          count: remaining,
+          provider,
+          manifest,
+        });
+        saved += got;
+      } catch (err) {
+        if (isRateLimitedError(err)) {
+          console.warn(`Rate limited while seeding ${slug}. Waiting before retry...`);
+          await sleep(1000);
+        } else {
+          console.warn(`Skip query "${query}" for ${slug}:`, err.message);
+        }
+      }
+    }
+
+    saveManifest(manifest);
+    console.log(`Done ${slug}: saved ${saved} images.`);
+  }
+}
+
+// --------------------
+// MAIN
+// --------------------
+async function run() {
+  const args = parseArgs(process.argv.slice(2));
+
+  if (args.cities) {
+    const featured = ["london", "manchester", "birmingham", "bristol", "leeds", "liverpool", "sheffield", "glasgow", "cardiff", "edinburgh"];
+    const cities = args.cities === "featured" ? featured : args.cities.split(",").map((s) => s.trim()).filter(Boolean);
+    const min = Number(args.min || 3);
+    const provider = String(args.provider || "pexels").toLowerCase();
+
+    if (provider === "pexels" && !PEXELS_API_KEY) {
+      console.error("Missing PEXELS_API_KEY for Pexels downloads.");
+      process.exit(1);
+    }
+    if (provider === "unsplash" && !UNSPLASH_ACCESS_KEY) {
+      console.error("Missing UNSPLASH_ACCESS_KEY for Unsplash downloads.");
+      process.exit(1);
+    }
+
+    if (!cities.length) {
+      console.log("No cities provided.");
+      process.exit(1);
+    }
+
+    await seedCities({ cities, min, provider });
+    return;
+  }
+
+  // Usage:
+  // node scripts/fetch-images.js "manchester uk skyline" cities/manchester 12 pexels
+  const [query, destSubdir, countStr, provider = "pexels"] = args._ || [];
+  const count = Number(countStr || 10);
+
+  if (!query || !destSubdir) {
+    console.log(`
+Usage:
+node scripts/fetch-images.js "<query>" <destSubdir> [count] [pexels|unsplash]
+node scripts/fetch-images.js --cities=featured --min=3 --provider=pexels
+
+Examples:
+node scripts/fetch-images.js "manchester uk city centre at dusk" cities/manchester 12 pexels
+node scripts/fetch-images.js --cities=glasgow,liverpool,bristol --min=3 --provider=pexels
+`);
+    process.exit(1);
+  }
+
+  const chosenProvider = String(provider || "pexels").toLowerCase();
+  if (chosenProvider === "pexels" && !PEXELS_API_KEY) {
+    console.error("Missing PEXELS_API_KEY for Pexels downloads.");
+    process.exit(1);
+  }
+  if (chosenProvider === "unsplash" && !UNSPLASH_ACCESS_KEY) {
+    console.error("Missing UNSPLASH_ACCESS_KEY for Unsplash downloads.");
+    process.exit(1);
+  }
+
+  const manifest = loadManifest();
+  const saved = await downloadResults({ query, destSubdir, count, provider: chosenProvider, manifest });
   saveManifest(manifest);
   console.log(`Done. Saved ${saved} images to ${destSubdir}`);
 }

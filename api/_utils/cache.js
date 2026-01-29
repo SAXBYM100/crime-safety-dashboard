@@ -1,13 +1,14 @@
+// api/_utils/cache.js
 const cache = new Map();
 
 function getCache(key) {
-  const entry = cache.get(key);
-  if (!entry) return null;
-  if (Date.now() > entry.expiresAt) {
+  const item = cache.get(key);
+  if (!item) return null;
+  if (Date.now() > item.expiresAt) {
     cache.delete(key);
     return null;
   }
-  return entry.value;
+  return item.value;
 }
 
 function setCache(key, value, ttlMs) {

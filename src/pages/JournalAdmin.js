@@ -39,7 +39,9 @@ export default function JournalAdmin() {
   const enabled = process.env.REACT_APP_JOURNAL_ADMIN === "true";
 
   useEffect(() => {
-    setMeta("Journal Admin | Area IQ", "Manual journal generation console.");
+    setMeta("Journal Admin | Area IQ", "Manual journal generation console.", {
+      robots: "noindex,nofollow",
+    });
   }, []);
 
   const callEditorialize = async (payload) => {
@@ -63,6 +65,86 @@ export default function JournalAdmin() {
     return data;
   };
 
+  const formatEditorialError = (error) => {
+    const payload = error?.payload || {};
+    const code = payload?.error || error?.message || "";
+    if (code === "RATE_LIMITED") return "Editorial engine busy — try again in a minute.";
+    if (code === "GEMINI_INVALID_JSON") return "Generation failed — output invalid. Try again.";
+    if (code === "GEMINI_SCHEMA_INVALID") return "Generation failed — incomplete output. Try again.";
+    if (code === "MEDIA_VALIDATION_FAILED") return "Generation failed — media invalid. Try again.";
+    if (code === "missing_env") return "Gemini not configured. Run npm run env:pull and restart npm run dev.";
+    if (String(code).toLowerCase().includes("rate_limit")) {
+      return "Editorial engine busy — try again in a minute.";
+    }
+    return "Generation failed — try again.";
+  };
+
+  const generateForLocations = async (locations) => {
+    const imageManifest = await loadImageManifest();
+    const output = [];
+
+    for (const location of locations) {
+      try {
+        const crimeStats = await fetchCrimeStats(location, { monthYYYYMM: month });
+        const guardianHeadlines = await fetchGuardianHeadlines(location.name, 5);
+        const payload = await callEditorialize({
+          useGemini,
+          location: {
+            ...location,
+            canonicalSlug: crimeStats.canonicalSlug || location.canonicalSlug,
+          },
+          crimeStats,
+          guardianHeadlines,
+          imageManifest,
+          options: {
+            monthYYYYMM: month,
+            status,
+            withImages,
+            imageTheme,
+            postType: postType === "auto" ? undefined : postType,
+            narrativeAngle: narrativeAngle === "auto" ? undefined : narrativeAngle,
+            structureVariant: structureVariant === "auto" ? undefined : structureVariant,
+          },
+        });
+
+        if (!overwriteExisting) {
+          const existing = await fetchJournalArticlesBySlug(payload.slug);
+          if (existing.length) {
+            output.push({
+              location,
+              locationName: location.name,
+              status: "skipped",
+              error: "Article already exists for slug.",
+            });
+            continue;
+          }
+        } else {
+          await deleteJournalArticlesBySlug(payload.slug);
+        }
+
+        const id = await createJournalArticle(payload);
+        output.push({ location, locationName: location.name, status: "ok", id, slug: payload.slug });
+      } catch (error) {
+        const friendly = formatEditorialError(error);
+        const payload = error?.payload || {};
+        if (payload?.error === "EDITORIALIZE_CRASH") {
+          setBanner("Editorial engine failed. Try again.");
+        } else if (payload?.error === "RATE_LIMITED") {
+          setBanner("Editorial engine busy — try again in a minute.");
+        } else if (friendly.includes("Gemini not configured")) {
+          setBanner(friendly);
+        }
+        output.push({
+          location,
+          locationName: location.name,
+          status: "error",
+          error: friendly,
+        });
+      }
+    }
+    return output;
+  };
+
   const handleGenerate = async () => {
     if (!enabled || running) return;
     setRunning(true);
@@ -70,69 +152,23 @@ export default function JournalAdmin() {
     setBanner("");
     try {
       const locations = DEFAULT_LOCATIONS.slice(0, Math.max(1, locationsCount));
-      const imageManifest = await loadImageManifest();
-      const output = [];
-
-      for (const location of locations) {
-        try {
-          const crimeStats = await fetchCrimeStats(location, { monthYYYYMM: month });
-          const guardianHeadlines = await fetchGuardianHeadlines(location.name, 5);
-          const payload = await callEditorialize({
-            useGemini,
-            location: {
-              ...location,
-              canonicalSlug: crimeStats.canonicalSlug || location.canonicalSlug,
-            },
-            crimeStats,
-            guardianHeadlines,
-            imageManifest,
-            options: {
-              monthYYYYMM: month,
-              status,
-              withImages,
-              imageTheme,
-              postType: postType === "auto" ? undefined : postType,
-              narrativeAngle: narrativeAngle === "auto" ? undefined : narrativeAngle,
-              structureVariant: structureVariant === "auto" ? undefined : structureVariant,
-            },
-          });
-
-          if (!overwriteExisting) {
-            const existing = await fetchJournalArticlesBySlug(payload.slug);
-            if (existing.length) {
-              output.push({
-                locationName: location.name,
-                status: "skipped",
-                error: "Article already exists for slug.",
-              });
-              continue;
-            }
-          } else {
-            await deleteJournalArticlesBySlug(payload.slug);
-          }
-
-          const id = await createJournalArticle(payload);
-          output.push({ locationName: location.name, status: "ok", id, slug: payload.slug });
-        } catch (error) {
-          const message = String(error?.message || "");
-          const payload = error?.payload || {};
-          if (payload?.error === "EDITORIALIZE_CRASH") {
-            setBanner(`Editorialize crashed (${payload.phase}): ${payload.message || "unknown error"}`);
-          } else if (payload?.error && payload?.error.startsWith("GEMINI_")) {
-            setBanner(`Gemini error: ${payload.error} ${payload.details || payload.message || ""}`.trim());
-          } else if (message.toLowerCase().includes("missing_env") || message.toLowerCase().includes("gemini")) {
-            setBanner("Gemini not configured. Run npm run env:pull and restart npm run dev.");
-          } else if (message.toLowerCase().includes("api_unreachable")) {
-            setBanner("API unreachable. Ensure Vercel dev is running on port 3002.");
-          }
-          output.push({
-            locationName: location.name,
-            status: "error",
-            error: error?.message || String(error),
-          });
-        }
-      }
+      const output = await generateForLocations(locations);
       setResults(output);
+    } finally {
+      setRunning(false);
+    }
+  };
+
+  const handleRetryFailed = async () => {
+    if (!enabled || running) return;
+    const failed = results.filter((item) => item.status === "error" && item.location);
+    if (!failed.length) return;
+    setRunning(true);
+    setBanner("");
+    try {
+      const locations = failed.map((item) => item.location);
+      const output = await generateForLocations(locations);
+      setResults((prev) => prev.filter((item) => item.status !== "error").concat(output));
     } finally {
       setRunning(false);
     }
@@ -252,6 +288,11 @@ export default function JournalAdmin() {
         <button className="primaryButton" type="button" onClick={handleGenerate} disabled={running}>
           {running ? "Generating..." : "Generate articles"}
         </button>
+        {results.some((item) => item.status === "error") && (
+          <button className="ghostButton" type="button" onClick={handleRetryFailed} disabled={running}>
+            Retry failed
+          </button>
+        )}
       </div>
 
       <div className="journalAdminResults">

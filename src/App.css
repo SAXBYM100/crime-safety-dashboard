@@ -3092,7 +3092,7 @@ th {
 
 @media (min-width: 361px) and (max-width: 640px) {
   .homeSearchShell {
-    grid-template-columns: 1fr auto;
+    grid-template-columns: auto minmax(0, 1fr) auto;
     align-items: center;
   }
 

@@ -1,18 +1,8 @@
+// api/area-report.js
 const { getCache, setCache } = require("./_utils/cache");
 const { rateLimit, getClientIp } = require("./_utils/rateLimit");
 const { getAreaReport } = require("../lib/providerRegistry");
-const { logDevError } = require("../lib/serverHttp");
-
-const CACHE_TTL_MS = 5 * 60 * 1000;
-
-function parseNumber(value) {
-  const n = Number(value);
-  return Number.isFinite(n) ? n : null;
-}
-
-function sendError(res, status, code, message, details) {
-  res.status(status).json({ error: { code, message, details } });
-}
+const { logDevError, sendError } = require("../lib/serverHttp");
 
 module.exports = async (req, res) => {
   if (req.method !== "GET") {
@@ -20,47 +10,33 @@ module.exports = async (req, res) => {
     return sendError(res, 405, "METHOD_NOT_ALLOWED", "Only GET is supported.");
   }
 
-  const ip = getClientIp(req);
-  const limit = rateLimit(`area-report:${ip}`, 60, 60 * 1000);
-  if (!limit.allowed) {
-    res.setHeader("Retry-After", String(Math.ceil(limit.resetMs / 1000)));
-    return sendError(res, 429, "RATE_LIMITED", "Too many requests. Please try again soon.");
-  }
-
-  const lat = parseNumber(req.query.lat);
-  const lon = parseNumber(req.query.lon);
-  const radius = parseNumber(req.query.radius) || 1000;
-  const from = typeof req.query.from === "string" ? req.query.from : "";
-  const to = typeof req.query.to === "string" ? req.query.to : "";
-  const name = typeof req.query.name === "string" ? req.query.name : "";
-
-  if (lat === null || lon === null) {
-    return sendError(res, 400, "INVALID_COORDS", "lat and lon must be valid numbers.");
-  }
-
-  if (Math.abs(lat) > 90 || Math.abs(lon) > 180) {
-    return sendError(res, 400, "OUT_OF_RANGE", "lat must be between -90 and 90, lon between -180 and 180.");
-  }
-
-  const monthPattern = /^\d{4}-\d{2}$/;
-  if ((from && !monthPattern.test(from)) || (to && !monthPattern.test(to))) {
-    return sendError(res, 400, "INVALID_DATE", "from/to must be YYYY-MM when provided.");
-  }
-
-  const cacheKey = `area:${lat.toFixed(5)}:${lon.toFixed(5)}:${radius}:${from}:${to}:${name}`;
-  const cached = getCache(cacheKey);
-  if (cached) {
-    res.setHeader("Cache-Control", "public, s-maxage=300, stale-while-revalidate=600");
-    return res.json(cached);
-  }
-
   try {
-    const report = await getAreaReport({ lat, lon, radius, from, to, name });
-    setCache(cacheKey, report, CACHE_TTL_MS);
-    res.setHeader("Cache-Control", "public, s-maxage=300, stale-while-revalidate=600");
+    const ip = getClientIp(req);
+    const rl = rateLimit({ key: `area-report:${ip}`, limit: 30, windowMs: 60_000 });
+    if (!rl.ok) {
+      res.setHeader("Retry-After", Math.ceil((rl.resetAt - Date.now()) / 1000));
+      return sendError(res, 429, "RATE_LIMITED", "Too many requests.");
+    }
+
+    const lat = Number(req.query?.lat);
+    const lon = Number(req.query?.lon);
+    const from = String(req.query?.from || "");
+    const to = String(req.query?.to || "");
+
+    if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
+      return sendError(res, 400, "INVALID_INPUT", "lat/lon required.");
+    }
+
+    const cacheKey = `area-report:${lat.toFixed(5)}:${lon.toFixed(5)}:${from}:${to}`;
+    const cached = getCache(cacheKey);
+    if (cached) return res.json(cached);
+
+    const report = await getAreaReport({ lat, lon, from, to });
+    setCache(cacheKey, report, 10 * 60 * 1000);
+
     return res.json(report);
   } catch (err) {
-    logDevError("area-report", err, { lat, lon, from, to });
-    return sendError(res, 502, "PROVIDER_ERROR", err.message || "Provider failed.", err.details || []);
+    logDevError("area-report", err, { query: req.query });
+    return sendError(res, 502, "PROVIDER_ERROR", err?.message || "Provider failed.", err?.details || []);
   }
 };

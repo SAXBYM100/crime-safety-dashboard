@@ -3,21 +3,61 @@ import { Link } from "react-router-dom";
 import { setMeta } from "../seo";
 import AdSlot from "../components/AdSlot";
 import cities from "../data/cities.json";
-import { fetchCitySummary } from "../services/cityIntelligence";
+import { fetchCitySummariesBatch } from "../services/cityIntelligence";
+import { loadImageManifest } from "../journal/loadImageManifest";
 
 const CITY_LIST = Object.entries(cities).map(([slug, data]) => ({ slug, ...data }));
-const CITY_HERO_MAP = {
-  london: "/images/cities/London.jpg",
-  manchester: "/images/cities/manchester.jpg",
-  birmingham: "/images/cities/birmingham.jpg",
-};
 const DEFAULT_HERO = "/images/cities/drone.jpg";
-const getCityHero = (slug) => CITY_HERO_MAP[slug?.toLowerCase()] || DEFAULT_HERO;
+
+function hashSeed(value) {
+  let hash = 0;
+  const str = String(value || "");
+  for (let i = 0; i < str.length; i += 1) {
+    hash = (hash << 5) - hash + str.charCodeAt(i);
+    hash |= 0;
+  }
+  return Math.abs(hash);
+}
+
+function pickFromList(list, seed) {
+  if (!list.length) return "";
+  const idx = seed % list.length;
+  return list[idx];
+}
+
+function buildManifestMap(items = []) {
+  const map = {};
+  items.forEach((item) => {
+    const path = String(item?.filePath || "");
+    if (!path.startsWith("/image-bank/")) return;
+    const match = path.match(/\/image-bank\/cities\/([^/]+)\//);
+    if (!match) return;
+    const slug = match[1];
+    if (!map[slug]) map[slug] = [];
+    map[slug].push(path);
+  });
+  Object.keys(map).forEach((slug) => {
+    map[slug].sort();
+  });
+  return map;
+}
+
+function pickCityHero(slug, manifestMap, themeImages, genericImages) {
+  const list = manifestMap[slug] || [];
+  const seed = hashSeed(slug);
+  const fromCity = pickFromList(list, seed);
+  if (fromCity) return fromCity;
+  const fromTheme = pickFromList(themeImages, seed);
+  if (fromTheme) return fromTheme;
+  const fromGeneric = pickFromList(genericImages, seed);
+  return fromGeneric || DEFAULT_HERO;
+}
 
 export default function CityIndex() {
   const [summaries, setSummaries] = useState({});
   const [ukAverage, setUkAverage] = useState(null);
   const [status, setStatus] = useState("idle");
+  const [cityImages, setCityImages] = useState({});
 
   useEffect(() => {
     setMeta(
@@ -31,20 +71,40 @@ export default function CityIndex() {
     async function run() {
       setStatus("loading");
       try {
-        const summaryList = await Promise.all(
-          CITY_LIST.map(async (city) => ({ slug: city.slug, summary: await fetchCitySummary(city) }))
-        );
+        const [batchSummaries, manifest] = await Promise.all([
+          fetchCitySummariesBatch(CITY_LIST),
+          loadImageManifest(),
+        ]);
         if (!mounted) return;
-        const map = summaryList.reduce((acc, item) => {
-          acc[item.slug] = item.summary;
-          return acc;
-        }, {});
-        const rates = summaryList
-          .map((item) => item.summary.ratePer1000)
+        const rates = Object.values(batchSummaries)
+          .map((item) => item.ratePer1000)
           .filter((value) => Number.isFinite(value));
         const nextUkAverage =
           rates.length > 0 ? rates.reduce((a, b) => a + b, 0) / rates.length : null;
-        setSummaries(map);
+        const manifestMap = buildManifestMap(manifest);
+        const generic = manifest
+          .map((item) => String(item?.filePath || ""))
+          .filter((path) => path.startsWith("/image-bank/generic-uk/"))
+          .sort();
+        const themes = manifest
+          .map((item) => String(item?.filePath || ""))
+          .filter((path) => path.startsWith("/image-bank/themes/"))
+          .sort();
+        const imageMap = CITY_LIST.reduce((acc, city) => {
+          const picked = pickCityHero(city.slug, manifestMap, themes, generic);
+          acc[city.slug] = picked;
+          if (
+            process.env.NODE_ENV !== "production" &&
+            (manifestMap[city.slug] || []).length > 0 &&
+            picked &&
+            !picked.startsWith(`/image-bank/cities/${city.slug}/`)
+          ) {
+            console.warn(`[CityIndex] Generic image used for ${city.slug} despite city folder images.`);
+          }
+          return acc;
+        }, {});
+        setSummaries(batchSummaries);
+        setCityImages(imageMap);
         setUkAverage(nextUkAverage);
         setStatus("ready");
       } catch (err) {
@@ -67,9 +127,13 @@ export default function CityIndex() {
 
   const citySummaries = {
     birmingham: "Commercial corridors, commuter zones, and neighbourhood risk signals in one view.",
-    manchester: "Market movement context for inner-ring, university, and growth districts.",
-    bristol: "Neighbourhood dynamics for coastal access, commuter patterns, and local risk signals.",
+    manchester: "Inner-ring movement, student districts, and night economy cues for faster decisions.",
+    bristol: "Neighbourhood dynamics for commuter flows, harbour districts, and local risk signals.",
     london: "Borough-level intelligence with pressure points, volatility, and demand cues.",
+    leeds: "City centre movement, student corridors, and commuter risk signals in one view.",
+    liverpool: "Waterfront districts, visitor flows, and local safety signals for quick decisions.",
+    sheffield: "Neighbourhood mix, commuter patterns, and district-level risk context.",
+    glasgow: "Central corridors, nightlife zones, and local safety pressure points.",
   };
 
   return (
@@ -112,14 +176,18 @@ export default function CityIndex() {
           <div key={city.slug} className="cityTile">
             <img
               className="cityTile__image"
-              src={getCityHero(city.slug)}
+              src={cityImages[city.slug] || DEFAULT_HERO}
               alt={`${city.name} skyline`}
               loading="lazy"
             />
             <div className="cityTile__shade" aria-hidden="true" />
             <div className="cityTile__overlay">
               <h3>{city.name}</h3>
-              <p>{citySummaries[city.slug] || "Neighbourhood risk context and comparative signals for quick decisions."}</p>
+              <p>
+                {city.description ||
+                  citySummaries[city.slug] ||
+                  "Neighbourhood risk context and comparative signals for quick decisions."}
+              </p>
               <div className="cityTile__actions">
                 <Link className="btnPrimary" to={`/app?q=${encodeURIComponent(city.name)}`}>
                   View Intelligence Report
@@ -140,12 +208,14 @@ export default function CityIndex() {
             <div key={`summary-${city.slug}`} className="summaryCard">
               <div className="summaryLabel">{city.name}</div>
               <div className="summaryValue">
-                {summary?.ratePer1000 != null ? summary.ratePer1000.toFixed(1) : "—"}
+                {Number.isFinite(summary?.ratePer1000) ? summary.ratePer1000.toFixed(1) : "—"}
               </div>
               <div className="summaryMeta">Crimes per 1,000 residents</div>
               <div className="summaryMeta">
                 UK avg: {ukAverageLabel} • Top category:{" "}
-                {summary?.topCategory ? summary.topCategory.replace(/-/g, " ") : "—"}
+                {summary?.topCategory && summary.topCategory !== "unknown"
+                  ? summary.topCategory.replace(/-/g, " ")
+                  : "—"}
               </div>
             </div>
           );
@@ -173,6 +243,9 @@ export default function CityIndex() {
     </div>
   );
 }
+
+
+
 
 
 

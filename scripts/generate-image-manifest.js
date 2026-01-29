@@ -8,7 +8,7 @@ const IMAGE_BANK_DIR = path.join(PROJECT_ROOT, "public", "image-bank");
 const OUTPUT = path.join(IMAGE_BANK_DIR, "manifest.json");
 const LEGACY_MANIFEST = path.join(PROJECT_ROOT, "scripts", "image-manifest.json");
 
-const ALLOWED_EXT = new Set([".jpg", ".jpeg", ".png", ".webp"]);
+const ALLOWED_EXT = new Set([".jpg", ".jpeg", ".png", ".webp", ".avif"]);
 
 function walk(dir) {
   const out = [];

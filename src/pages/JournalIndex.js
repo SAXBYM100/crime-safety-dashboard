@@ -1,7 +1,7 @@
 ﻿import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { fetchJournalPage } from "../services/journalStore";
-import { setMeta, setJsonLd } from "../seo";
+import { setMeta, setJsonLd, toBrandedUrl } from "../seo";
 
 const FALLBACK_IMAGE = "/images/cities/drone.jpg";
 
@@ -57,7 +57,7 @@ function buildFeedSchema(items) {
   const itemList = items.map((item, idx) => ({
     "@type": "ListItem",
     position: idx + 1,
-    url: `https://area-iq.com/journal/${item.slug}`,
+      url: toBrandedUrl(`/journal/${item.slug}`),
   }));
   return {
     "@context": "https://schema.org",

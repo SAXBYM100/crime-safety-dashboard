@@ -47,6 +47,7 @@ function parseArgs(argv) {
     status: "draft",
     month: "",
     overwrite: false,
+    concurrency: 1,
     useGemini: true,
   };
   argv.forEach((arg) => {
@@ -54,6 +55,7 @@ function parseArgs(argv) {
     if (arg.startsWith("--status=")) options.status = arg.split("=")[1] || "draft";
     if (arg.startsWith("--month=")) options.month = arg.split("=")[1] || "";
     if (arg.startsWith("--overwrite=")) options.overwrite = arg.split("=")[1] === "true";
+    if (arg.startsWith("--concurrency=")) options.concurrency = Number(arg.split("=")[1] || 1);
     if (arg.startsWith("--useGemini=")) options.useGemini = arg.split("=")[1] !== "false";
   });
   return options;
@@ -155,21 +157,73 @@ function stripEmptyObjectsDeep(input) {
   return input;
 }
 
-async function callEditorialize(baseUrl, payload) {
-  const res = await fetch(`${baseUrl}/api/editorialize`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`editorialize failed: ${res.status} ${text.slice(0, 200)}`);
+function slugify(value) {
+  return String(value || "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+function buildSlug(location, crimeStats, options) {
+  const canonicalSlug =
+    location?.canonicalSlug || crimeStats?.canonicalSlug || slugify(location?.name || "location");
+  const monthLabel = options?.month || crimeStats?.monthLabel || crimeStats?.dataMonth || "latest";
+  const monthSlug = String(monthLabel || "latest").toLowerCase() === "latest" ? "latest" : monthLabel;
+  return slugify(`${canonicalSlug}-${monthSlug}`);
+}
+
+async function sleep(ms) {
+  await new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function callEditorialize(baseUrl, payload, { retries = 3 } = {}) {
+  let attempt = 0;
+  while (true) {
+    attempt += 1;
+    const res = await fetch(`${baseUrl}/api/editorialize`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    if (res.status === 429) {
+      if (attempt > retries) {
+        const text = await res.text();
+        throw new Error(`RATE_LIMITED: ${text.slice(0, 200)}`);
+      }
+      const waitMs = 1000 * Math.pow(2, attempt - 1) + Math.floor(Math.random() * 250);
+      console.warn(`Rate limited. Retrying in ${waitMs}ms...`);
+      await sleep(waitMs);
+      continue;
+    }
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(`editorialize failed: ${res.status} ${text.slice(0, 200)}`);
+    }
+    return res.json();
   }
-  return res.json();
+}
+
+async function mapWithConcurrency(items, limit, mapper) {
+  const results = new Array(items.length);
+  let nextIndex = 0;
+  const workerCount = Math.min(limit, items.length);
+
+  async function worker() {
+    while (true) {
+      const current = nextIndex;
+      nextIndex += 1;
+      if (current >= items.length) break;
+      results[current] = await mapper(items[current], current);
+    }
+  }
+
+  await Promise.all(Array.from({ length: workerCount }, () => worker()));
+  return results;
 }
 
 async function main() {
   const options = parseArgs(process.argv.slice(2));
+  options.concurrency = Number.isFinite(options.concurrency) ? Math.max(1, options.concurrency) : 1;
   const app = initAdmin();
   const db = app.firestore();
 
@@ -181,11 +235,22 @@ async function main() {
   let skipped = 0;
   let errors = 0;
 
-  for (const location of locations) {
+  await mapWithConcurrency(locations, options.concurrency, async (location) => {
     try {
       const crimeStats = await fetchCrimeStats(location, options.month);
-      const guardianHeadlines = await fetchGuardianHeadlines(location.name, 5);
+      const slug = buildSlug(location, crimeStats, options);
+      const docRef = db.collection("journalArticles").doc(slug);
 
+      if (!options.overwrite) {
+        const existing = await docRef.get();
+        if (existing.exists) {
+          skipped += 1;
+          console.log(`[skip] ${location.name} (${slug})`);
+          return;
+        }
+      }
+
+      const guardianHeadlines = await fetchGuardianHeadlines(location.name, 5);
       const article = await callEditorialize(baseUrl, {
         location,
         crimeStats,
@@ -198,35 +263,28 @@ async function main() {
         },
       });
 
-      const slug = article.slug || (crimeStats?.canonicalSlug ? `${crimeStats.canonicalSlug}-${crimeStats.monthLabel}` : "");
-      if (!slug) {
+      const docId = article.slug || slug;
+      if (!docId) {
         throw new Error("Missing slug in editorial response");
       }
 
-      const docRef = db.collection("journalArticles").doc(slug);
-      const existing = await docRef.get();
-      if (existing.exists && !options.overwrite) {
-        skipped += 1;
-        console.log(`[skip] ${location.name} (${slug})`);
-        continue;
-      }
-
       const normalized = validateAndNormalizeMedia(article);
-      const payload = stripEmptyObjectsDeep(
-        deepStripUndefined({
-          ...normalized,
-          status: options.status || normalized.status || "draft",
-        })
-      ) || {};
+      const payload =
+        stripEmptyObjectsDeep(
+          deepStripUndefined({
+            ...normalized,
+            status: options.status || normalized.status || "draft",
+          })
+        ) || {};
 
-      await docRef.set(payload, { merge: true });
+      await db.collection("journalArticles").doc(docId).set(payload, { merge: true });
       created += 1;
-      console.log(`[ok] ${location.name} -> ${slug}`);
+      console.log(`[ok] ${location.name} -> ${docId}`);
     } catch (error) {
       errors += 1;
       console.error(`[error] ${location.name}: ${error.message || error}`);
     }
-  }
+  });
 
   console.log(`Done. created=${created} skipped=${skipped} errors=${errors}`);
 }

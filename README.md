@@ -74,3 +74,78 @@ If the Police API returns an error (400/429/503), the app surfaces a friendly er
 - React Router
 - Fetch-based APIs
 - No backend (client-only)
+## Tonight Test Pack (PowerShell)
+
+Start dev servers:
+```powershell
+npm run dev
+```
+
+Build request body + UTF8 bytes:
+```powershell
+$body = @{
+  useGemini = $true
+  location = @{ name = "Manchester"; canonicalSlug = "manchester-england" }
+  crimeStats = @{
+    monthLabel = "Latest"
+    incidentsThisMonth = 120
+    topCategory = "anti-social behaviour"
+    categoryShare = 24.5
+    threeMonthAverage = 135
+    trendCoverageMonths = 4
+  }
+  guardianHeadlines = @()
+  imageManifest = @()
+} | ConvertTo-Json -Depth 20
+
+$bytes = [Text.Encoding]::UTF8.GetBytes($body)
+$headers = @{ "Expect" = "" }
+```
+
+Echo test (vercel direct):
+```powershell
+iwr -Method Post http://localhost:3002/api/editorialize-echo -ContentType "application/json; charset=utf-8" -Headers $headers -Body $bytes -UseBasicParsing | select -Expand Content
+```
+Expect: keys include `location`, `crimeStats`, `imageManifestIsArray` is `true`.
+
+Editorialize fallback (vercel direct):
+```powershell
+$bodyFallbackObj = @{
+  useGemini = $false
+  location = @{ name = "Manchester"; canonicalSlug = "manchester-england" }
+  crimeStats = @{
+    monthLabel = "Latest"
+    incidentsThisMonth = 120
+    topCategory = "anti-social behaviour"
+    categoryShare = 24.5
+    threeMonthAverage = 135
+    trendCoverageMonths = 4
+  }
+  guardianHeadlines = @()
+  imageManifest = @()
+}
+$bodyFallback = $bodyFallbackObj | ConvertTo-Json -Depth 20
+$bytesFallback = [Text.Encoding]::UTF8.GetBytes($bodyFallback)
+
+iwr -Method Post http://localhost:3002/api/editorialize -ContentType "application/json; charset=utf-8" -Headers $headers -Body $bytesFallback -UseBasicParsing | select -Expand Content
+```
+Expect: 200 JSON with headline/seoTitle/signals etc.
+Note: do not use string Replace; ConvertTo-Json includes spaces.
+
+Editorialize Gemini (vercel direct):
+```powershell
+iwr -Method Post http://localhost:3002/api/editorialize -ContentType "application/json; charset=utf-8" -Headers $headers -Body $bytes -UseBasicParsing | select -Expand Content
+```
+Expect: 200 editorial JSON OR structured JSON error (not FUNCTION_INVOCATION_FAILED).
+
+Repeat via CRA proxy (port 3000):
+```powershell
+iwr -Method Post http://localhost:3000/api/editorialize-echo -ContentType "application/json; charset=utf-8" -Headers $headers -Body $bytes -UseBasicParsing | select -Expand Content
+
+iwr -Method Post http://localhost:3000/api/editorialize -ContentType "application/json; charset=utf-8" -Headers $headers -Body $bytesFallback -UseBasicParsing | select -Expand Content
+
+iwr -Method Post http://localhost:3000/api/editorialize -ContentType "application/json; charset=utf-8" -Headers $headers -Body $bytes -UseBasicParsing | select -Expand Content
+```
+
+If echo shows missing fields, the client is not sending JSON correctly.
+If echo is correct but editorialize INVALID_INPUT, server parsing is wrong (should not happen after this fix).

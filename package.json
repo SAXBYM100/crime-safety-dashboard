@@ -35,6 +35,7 @@
     "generate:image-manifest": "node scripts/generate-image-manifest.js",
     "generate:journal:batch": "node scripts/generate-journal-batch.js",
     "journal:unpublish:all": "node scripts/unpublish-all-journals.js",
+    "images:seed:cities": "node scripts/fetch-images.js --cities=featured --min=3 --provider=pexels",
     "prebuild": "npm run verify:api && npm run generate:image-manifest && npm run generate:sitemap:routes && npm run generate:sitemap",
     "build": "react-scripts build",
     "test": "react-scripts test"
@@ -57,3 +58,4 @@
     ]
   }
 }
+
