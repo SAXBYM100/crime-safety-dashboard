@@ -1,7 +1,32 @@
 // Client-side data access helpers that call the serverless /api routes.
+import { fetchWithRetry } from "../utils/fetchWithRetry";
+
+let retryReporter = null;
+
+export function setRetryReporter(fn) {
+  retryReporter = typeof fn === "function" ? fn : null;
+}
+
+export function clearRetryReporter() {
+  retryReporter = null;
+}
 
 async function fetchJsonOrThrow(url) {
-  const res = await fetch(url, { headers: { Accept: "application/json" } });
+  let res;
+  try {
+    res = await fetchWithRetry(
+      url,
+      { headers: { Accept: "application/json" } },
+      {
+        onRetry: retryReporter,
+      }
+    );
+  } catch (err) {
+    const error = new Error(err?.message || "Request failed.");
+    error.status = err?.status;
+    error.bodySnippet = err?.bodySnippet;
+    throw error;
+  }
   const text = await res.text().catch(() => "");
   let json = null;
   if (text) {
@@ -100,11 +125,25 @@ export async function fetchAreaReport({ lat, lng, radius = 1000, from = "", to =
 }
 
 export async function fetchAreaReportBatch(items = []) {
-  const res = await fetch("/api/area-report-batch", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ items }),
-  });
+  let res;
+  try {
+    res = await fetchWithRetry(
+      "/api/area-report-batch",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ items }),
+      },
+      { onRetry: retryReporter }
+    );
+  } catch (err) {
+    return {
+      ok: false,
+      code: err?.status === 429 ? "RATE_LIMITED" : "UPSTREAM_ERROR",
+      results: {},
+      retryAfterSeconds: undefined,
+    };
+  }
   const text = await res.text().catch(() => "");
   let json = null;
   if (text) {

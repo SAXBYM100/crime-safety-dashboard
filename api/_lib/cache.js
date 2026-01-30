@@ -1,5 +1,8 @@
-const cache = new Map();
-const inflight = new Map();
+const cache = globalThis.__AREA_IQ_CACHE__ || new Map();
+const inflight = globalThis.__AREA_IQ_INFLIGHT__ || new Map();
+
+globalThis.__AREA_IQ_CACHE__ = cache;
+globalThis.__AREA_IQ_INFLIGHT__ = inflight;
 
 function nowMs() {
   return Date.now();

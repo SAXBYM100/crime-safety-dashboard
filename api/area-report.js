@@ -1,16 +1,17 @@
 // api/area-report.js
 const { getCacheEntry, setCache, getOrSetInflight } = require("./_utils/cache");
 const { rateLimit, getClientIp } = require("./_utils/rateLimit");
+const { consumeToken } = require("./_utils/tokenBucket");
 const { getAreaReport } = require("../lib/providerRegistry");
 const { logDevError, sendError } = require("../lib/serverHttp");
 
 const CACHE_TTL_MS = 6 * 60 * 60 * 1000;
-const EDGE_TTL_SECONDS = 21600;
-const STALE_SECONDS = 86400;
+const EDGE_TTL_SECONDS = 300;
+const STALE_SECONDS = 600;
 
 function setCacheHeaders(res, isShort = false) {
   if (isShort) {
-    res.setHeader("Cache-Control", "public, s-maxage=60, stale-while-revalidate=600");
+    res.setHeader("Cache-Control", "public, s-maxage=60, stale-while-revalidate=300");
     return;
   }
   res.setHeader("Cache-Control", `public, s-maxage=${EDGE_TTL_SECONDS}, stale-while-revalidate=${STALE_SECONDS}`);
@@ -45,6 +46,19 @@ module.exports = async (req, res) => {
     }
 
     const ip = getClientIp(req);
+    const bucket = consumeToken(`area-report:${ip}`, { capacity: 12, refillPerSec: 0.3 });
+    if (!bucket.ok) {
+      const retryAfterSeconds = Number.isFinite(bucket.retryAfterSeconds) ? bucket.retryAfterSeconds : 60;
+      res.setHeader("Retry-After", String(retryAfterSeconds));
+      setCacheHeaders(res, true);
+      return res.status(429).json({
+        ok: false,
+        code: "RATE_LIMITED_LOCAL",
+        message: "Too many requests.",
+        retryAfterSeconds,
+      });
+    }
+
     const rl = rateLimit({ key: `area-report:${ip}`, limit: 30, windowMs: 60_000 });
     if (!rl.ok) {
       const retryAfterSeconds = Number.isFinite(rl.resetMs) ? Math.max(1, Math.ceil(rl.resetMs / 1000)) : 60;

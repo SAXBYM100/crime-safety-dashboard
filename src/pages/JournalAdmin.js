@@ -1,16 +1,17 @@
-﻿import React, { useEffect, useState } from "react";
+﻿import React, { useEffect, useRef, useState } from "react";
 import { setMeta } from "../seo";
 import cities from "../data/cities.json";
 import { fetchCrimeStats } from "../journal/fetchCrimeStats";
 import { fetchGuardianHeadlines } from "../journal/fetchGuardianHeadlines";
 import { loadImageManifest } from "../journal/loadImageManifest";
+import { setRetryReporter, clearRetryReporter } from "../services/existing";
 import {
   createJournalArticle,
   deleteJournalArticlesBySlug,
   fetchJournalArticlesBySlug,
 } from "../services/journalStore";
 
-const DEFAULT_LOCATIONS = Object.entries(cities)
+const AVAILABLE_LOCATIONS = Object.entries(cities)
   .map(([slug, city]) => ({
     name: city.name,
     canonicalName: city.name,
@@ -24,6 +25,7 @@ const DEFAULT_LOCATIONS = Object.entries(cities)
 
 export default function JournalAdmin() {
   const [month, setMonth] = useState("");
+  const [concurrency, setConcurrency] = useState(1);
   const [status, setStatus] = useState("published");
   const [withImages, setWithImages] = useState(true);
   const [useGemini, setUseGemini] = useState(true);
@@ -33,10 +35,32 @@ export default function JournalAdmin() {
   const [structureVariant, setStructureVariant] = useState("auto");
   const [locationsCount, setLocationsCount] = useState(5);
   const [overwriteExisting, setOverwriteExisting] = useState(false);
+  const [locationOrder, setLocationOrder] = useState(AVAILABLE_LOCATIONS);
+  const [autoPublish, setAutoPublish] = useState(false);
   const [results, setResults] = useState([]);
   const [running, setRunning] = useState(false);
   const [banner, setBanner] = useState("");
+  const [progress, setProgress] = useState({ current: "", index: 0, total: 0 });
+  const [lastRetry, setLastRetry] = useState("");
+  const [lastError, setLastError] = useState("");
+  const [stopped, setStopped] = useState(false);
+  const [pendingLocations, setPendingLocations] = useState([]);
   const enabled = process.env.REACT_APP_JOURNAL_ADMIN === "true";
+  const abortRef = useRef(false);
+  const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+  const shuffleLocations = () => {
+    setLocationOrder(() => {
+      const list = [...AVAILABLE_LOCATIONS];
+      for (let i = list.length - 1; i > 0; i -= 1) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [list[i], list[j]] = [list[j], list[i]];
+      }
+      return list;
+    });
+  };
+  const resetLocationOrder = () => {
+    setLocationOrder(AVAILABLE_LOCATIONS);
+  };
 
   useEffect(() => {
     setMeta("Journal Admin | Area IQ", "Manual journal generation console.", {
@@ -69,80 +93,125 @@ export default function JournalAdmin() {
     const payload = error?.payload || {};
     const code = payload?.error || error?.message || "";
     if (code === "RATE_LIMITED" || code === "RATE_LIMITED_GEMINI") {
-      return "Editorial engine busy — try again in a minute.";
+      return "Editorial engine busy � try again in a minute.";
     }
-    if (code === "GEMINI_INVALID_JSON") return "Generation failed — output invalid. Try again.";
-    if (code === "GEMINI_SCHEMA_INVALID") return "Generation failed — incomplete output. Try again.";
-    if (code === "MEDIA_VALIDATION_FAILED") return "Generation failed — media invalid. Try again.";
+    if (code === "GEMINI_INVALID_JSON") return "Generation failed � output invalid. Try again.";
+    if (code === "GEMINI_SCHEMA_INVALID") return "Generation failed � incomplete output. Try again.";
+    if (code === "MEDIA_VALIDATION_FAILED") return "Generation failed � media invalid. Try again.";
     if (code === "missing_env") return "Gemini not configured. Run npm run env:pull and restart npm run dev.";
     if (String(code).toLowerCase().includes("rate_limit")) {
-      return "Editorial engine busy — try again in a minute.";
+      return "Editorial engine busy � try again in a minute.";
     }
-    return "Generation failed — try again.";
+    return "Generation failed � try again.";
   };
 
   const generateForLocations = async (locations) => {
     const imageManifest = await loadImageManifest();
     const output = [];
+    const total = locations.length;
+    const queue = [...locations];
+    const effectiveConcurrency = Math.max(1, Number(concurrency) || 1);
+    const perLocationDelayMs = 350;
 
-    for (const location of locations) {
-      try {
-        const crimeStats = await fetchCrimeStats(location, { monthYYYYMM: month });
-        const guardianHeadlines = await fetchGuardianHeadlines(location.name, 5);
-        const payload = await callEditorialize({
-          useGemini,
-          location: {
-            ...location,
-            canonicalSlug: crimeStats.canonicalSlug || location.canonicalSlug,
-          },
-          crimeStats,
-          guardianHeadlines,
-          imageManifest,
-          options: {
-            monthYYYYMM: month,
-            status,
-            withImages,
-            imageTheme,
-            postType: postType === "auto" ? undefined : postType,
-            narrativeAngle: narrativeAngle === "auto" ? undefined : narrativeAngle,
-            structureVariant: structureVariant === "auto" ? undefined : structureVariant,
-          },
-        });
+    setProgress({ current: "", index: 0, total });
+    setLastRetry("");
+    setLastError("");
+    setStopped(false);
+    setPendingLocations([]);
+    abortRef.current = false;
 
-        if (!overwriteExisting) {
-          const existing = await fetchJournalArticlesBySlug(payload.slug);
-          if (existing.length) {
-            output.push({
-              location,
-              locationName: location.name,
-              status: "skipped",
-              error: "Article already exists for slug.",
+    setRetryReporter((info) => {
+      if (!info) return;
+      const status = info.status || "retry";
+      const delaySec = info.delayMs ? (info.delayMs / 1000).toFixed(1) : "";
+      const msg = `Retry ${info.attempt}/${info.retries} (${status}) in ${delaySec}s`;
+      setLastRetry(msg);
+    });
+
+    let processed = 0;
+    const worker = async () => {
+        while (queue.length > 0 && !abortRef.current) {
+          const location = queue.shift();
+          processed += 1;
+          setProgress({ current: location.name, index: processed, total });
+          try {
+            const crimeStats = await fetchCrimeStats(location, { monthYYYYMM: month });
+            const guardianHeadlines = await fetchGuardianHeadlines(location.name, 5);
+            const effectiveStatus = autoPublish ? "published" : status;
+            const payload = await callEditorialize({
+              useGemini,
+              location: {
+                ...location,
+              canonicalSlug: crimeStats.canonicalSlug || location.canonicalSlug,
+            },
+            crimeStats,
+            guardianHeadlines,
+            imageManifest,
+              options: {
+                monthYYYYMM: month,
+                status: effectiveStatus,
+                withImages,
+                imageTheme,
+                postType: postType === "auto" ? undefined : postType,
+                narrativeAngle: narrativeAngle === "auto" ? undefined : narrativeAngle,
+                structureVariant: structureVariant === "auto" ? undefined : structureVariant,
+              },
             });
-            continue;
-          }
-        } else {
-          await deleteJournalArticlesBySlug(payload.slug);
-        }
 
-        const id = await createJournalArticle(payload);
-        output.push({ location, locationName: location.name, status: "ok", id, slug: payload.slug });
-      } catch (error) {
-        const friendly = formatEditorialError(error);
-        const payload = error?.payload || {};
-        if (payload?.error === "EDITORIALIZE_CRASH") {
-          setBanner("Editorial engine failed. Try again.");
-        } else if (payload?.error === "RATE_LIMITED" || payload?.error === "RATE_LIMITED_GEMINI") {
-          setBanner("Editorial engine busy — try again in a minute.");
-        } else if (friendly.includes("Gemini not configured")) {
-          setBanner(friendly);
+          if (!overwriteExisting) {
+            const existing = await fetchJournalArticlesBySlug(payload.slug);
+            if (existing.length) {
+              output.push({
+                location,
+                locationName: location.name,
+                status: "skipped",
+                error: "Article already exists for slug.",
+              });
+              await sleep(perLocationDelayMs);
+              continue;
+            }
+          } else {
+            await deleteJournalArticlesBySlug(payload.slug);
+          }
+
+          const finalPayload = { ...payload, status: effectiveStatus };
+          if (autoPublish) {
+            const now = new Date().toISOString();
+            finalPayload.publishedAt = finalPayload.publishedAt || now;
+            finalPayload.updatedAt = now;
+          }
+          const id = await createJournalArticle(finalPayload);
+          output.push({ location, locationName: location.name, status: "ok", id, slug: finalPayload.slug });
+        } catch (error) {
+          const friendly = formatEditorialError(error);
+          setLastError(friendly);
+          const payload = error?.payload || {};
+          if (payload?.error === "EDITORIALIZE_CRASH") {
+            setBanner("Editorial engine failed. Try again.");
+          } else if (payload?.error === "RATE_LIMITED" || payload?.error === "RATE_LIMITED_GEMINI") {
+            setBanner("Editorial engine busy � try again in a minute.");
+          } else if (friendly.includes("Gemini not configured")) {
+            setBanner(friendly);
+          }
+          output.push({
+            location,
+            locationName: location.name,
+            status: "error",
+            error: friendly,
+          });
         }
-        output.push({
-          location,
-          locationName: location.name,
-          status: "error",
-          error: friendly,
-        });
+        await sleep(perLocationDelayMs);
       }
+    };
+
+    await Promise.all(
+      Array.from({ length: Math.min(effectiveConcurrency, queue.length || 1) }, () => worker())
+    );
+    clearRetryReporter();
+
+    if (abortRef.current && queue.length) {
+      setPendingLocations(queue);
+      setStopped(true);
     }
     return output;
   };
@@ -153,7 +222,8 @@ export default function JournalAdmin() {
     setResults([]);
     setBanner("");
     try {
-      const locations = DEFAULT_LOCATIONS.slice(0, Math.max(1, locationsCount));
+      const count = Math.max(1, locationsCount);
+      const locations = locationOrder.slice(0, count);
       const output = await generateForLocations(locations);
       setResults(output);
     } finally {
@@ -161,6 +231,26 @@ export default function JournalAdmin() {
     }
   };
 
+  const handleStop = () => {
+    if (!running) return;
+    abortRef.current = true;
+    setBanner("Generation paused.");
+    setStopped(true);
+  };
+
+  const handleContinue = async () => {
+    if (!enabled || running || pendingLocations.length === 0) return;
+    setRunning(true);
+    setBanner("");
+    try {
+      const output = await generateForLocations(pendingLocations);
+      setResults((prev) => prev.concat(output));
+      setPendingLocations([]);
+      setStopped(false);
+    } finally {
+      setRunning(false);
+    }
+  };
   const handleRetryFailed = async () => {
     if (!enabled || running) return;
     const failed = results.filter((item) => item.status === "error" && item.location);
@@ -274,9 +364,27 @@ export default function JournalAdmin() {
           <input
             type="number"
             min="1"
-            max={DEFAULT_LOCATIONS.length}
+            max={AVAILABLE_LOCATIONS.length}
             value={locationsCount}
             onChange={(e) => setLocationsCount(Number(e.target.value) || 1)}
+          />
+        </label>
+        <div className="journalAdminLabel">
+          <button type="button" className="ghostButton" onClick={shuffleLocations}>
+            Shuffle locations
+          </button>
+          <button type="button" className="ghostButton" onClick={resetLocationOrder}>
+            Reset order
+          </button>
+        </div>
+        <label className="journalAdminLabel">
+          Concurrency
+          <input
+            type="number"
+            min="1"
+            max="3"
+            value={concurrency}
+            onChange={(e) => setConcurrency(Math.max(1, Number(e.target.value) || 1))}
           />
         </label>
         <label className="journalAdminLabel">
@@ -287,9 +395,25 @@ export default function JournalAdmin() {
             onChange={(e) => setOverwriteExisting(e.target.checked)}
           />
         </label>
+        <label className="journalAdminLabel">
+          Auto publish
+          <input
+            type="checkbox"
+            checked={autoPublish}
+            onChange={(e) => setAutoPublish(e.target.checked)}
+          />
+        </label>
         <button className="primaryButton" type="button" onClick={handleGenerate} disabled={running}>
           {running ? "Generating..." : "Generate articles"}
         </button>
+        <button className="ghostButton" type="button" onClick={handleStop} disabled={!running}>
+          Stop
+        </button>
+        {stopped && pendingLocations.length > 0 && (
+          <button className="ghostButton" type="button" onClick={handleContinue} disabled={running}>
+            Continue
+          </button>
+        )}
         {results.some((item) => item.status === "error") && (
           <button className="ghostButton" type="button" onClick={handleRetryFailed} disabled={running}>
             Retry failed
@@ -311,6 +435,11 @@ export default function JournalAdmin() {
         <p>
           Gemini editorial: {useGemini ? "on" : "off"}
         </p>
+        <p>
+          Concurrency: {concurrency} | Progress: {progress.index}/{progress.total} {progress.current ? `(${progress.current})` : ""}
+        </p>
+        {lastRetry && <p>Last retry: {lastRetry}</p>}
+        {lastError && <p className="error">Last error: {lastError}</p>}
       </div>
 
       {results.length > 0 && (
@@ -327,3 +456,6 @@ export default function JournalAdmin() {
     </div>
   );
 }
+
+
+

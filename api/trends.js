@@ -1,13 +1,14 @@
 const { rateLimit, getClientIp } = require("./_utils/rateLimit");
+const { consumeToken } = require("./_utils/tokenBucket");
 const { getCacheEntry } = require("./_utils/cache");
 const { fetchTrend, getTrendCacheKey } = require("./_utils/trendsCore");
 
-const EDGE_TTL_SECONDS = 21600;
-const STALE_SECONDS = 86400;
+const EDGE_TTL_SECONDS = 300;
+const STALE_SECONDS = 600;
 
 function setCacheHeaders(res, isShort = false) {
   if (isShort) {
-    res.setHeader("Cache-Control", "public, s-maxage=60, stale-while-revalidate=600");
+    res.setHeader("Cache-Control", "public, s-maxage=60, stale-while-revalidate=300");
     return;
   }
   res.setHeader("Cache-Control", `public, s-maxage=${EDGE_TTL_SECONDS}, stale-while-revalidate=${STALE_SECONDS}`);
@@ -46,6 +47,18 @@ module.exports = async (req, res) => {
         cacheAgeSeconds: Math.max(0, Math.floor((Date.now() - cachedEntry.storedAt) / 1000)),
       },
       200
+    );
+  }
+
+  const bucket = consumeToken(`trends:${ip}`, { capacity: 12, refillPerSec: 0.3 });
+  if (!bucket.ok) {
+    const retryAfterSeconds = Number.isFinite(bucket.retryAfterSeconds) ? bucket.retryAfterSeconds : 60;
+    res.setHeader("Retry-After", String(retryAfterSeconds));
+    return sendPayload(
+      res,
+      { ok: false, code: "RATE_LIMITED_LOCAL", trend: "unknown", rows: [], retryAfterSeconds },
+      429,
+      true
     );
   }
 

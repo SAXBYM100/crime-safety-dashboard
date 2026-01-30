@@ -686,6 +686,31 @@ function createHandler() {
         "tags",
       ];
 
+      async function buildFallbackArticleFromGemini(reason, detail) {
+        if (process.env.NODE_ENV !== "production") {
+          console.warn(`[editorialize] fallback (${reason}):`, detail?.slice?.(0, 200) || detail);
+        }
+        try {
+          const fallback = await buildFallbackArticle({
+            location,
+            crimeStats,
+            imageManifest,
+            options,
+          });
+          const normalized = validateAndNormalizeMedia(fallback);
+          return { status: 200, payload: normalized };
+        } catch (error) {
+          return {
+            status: 500,
+            payload: {
+              error: "FALLBACK_ERROR",
+              reason,
+              details: String(error),
+            },
+          };
+        }
+      }
+
       try {
         const override = normalizeModelName(process.env.GEMINI_MODEL);
         let modelName = override;
@@ -714,7 +739,7 @@ function createHandler() {
                   contents: [{ role: "user", parts: [{ text: promptToUse }] }],
                   generationConfig: {
                     temperature: 0.4,
-                    maxOutputTokens: 2000,
+                    maxOutputTokens: 3000,
                     responseMimeType: "application/json",
                   },
                 }),
@@ -771,13 +796,7 @@ function createHandler() {
                 promptToUse = repairPrompt;
                 continue;
               }
-              return {
-                status: 500,
-                payload: {
-                  error: "GEMINI_INVALID_JSON",
-                  sample: cleaned.slice(0, 600),
-                },
-              };
+              return await buildFallbackArticleFromGemini("GEMINI_INVALID_JSON", cleaned);
             }
 
             const missing = missingFields(parsed, REQUIRED_FIELDS);
@@ -786,39 +805,22 @@ function createHandler() {
                 promptToUse = repairPrompt;
                 continue;
               }
-              return {
-                status: 500,
-                payload: {
-                  error: "GEMINI_SCHEMA_INVALID",
-                  missing,
-                  sample: cleaned.slice(0, 500),
-                },
-              };
+              return await buildFallbackArticleFromGemini("GEMINI_SCHEMA_INVALID", cleaned);
             }
 
             const schemaErrors = validateArticleSchema(parsed);
             if (schemaErrors.length) {
-              return {
-                status: 500,
-                payload: {
-                  error: "GEMINI_SCHEMA_INVALID",
-                  details: schemaErrors,
-                },
-              };
+              return await buildFallbackArticleFromGemini("GEMINI_SCHEMA_INVALID", schemaErrors.join(", "));
             }
 
             try {
               const normalized = validateAndNormalizeMedia(parsed);
               return { status: 200, payload: normalized };
             } catch (mediaError) {
-              return {
-                status: 500,
-                payload: {
-                  error: "MEDIA_VALIDATION_FAILED",
-                  message: mediaError?.message || String(mediaError),
-                  phase: "gemini",
-                },
-              };
+              return await buildFallbackArticleFromGemini(
+                "MEDIA_VALIDATION_FAILED",
+                mediaError?.message || String(mediaError)
+              );
             }
           }
         }
